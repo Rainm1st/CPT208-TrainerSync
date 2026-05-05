@@ -16,6 +16,9 @@ const state = {
   loaded: false,
   hrSimInterval: null,
   hrTarget: 142,
+  hrHistory: Array.from({length:60}, (_,i)=>
+    Math.round(130 + Math.sin(i*0.18)*14 + Math.sin(i*0.07)*8 + (Math.random()-0.5)*4)
+  ),
 
   trainees: [
     { id:"me",  name:"Na Li",     initials:"NL", role:"user",  exerciseId:"", exerciseName:"—",
@@ -172,6 +175,8 @@ function updateHRUI(hr) {
 
   const me = state.trainees.find(t=>t.id==="me");
   if (me) { me.hr=hr; me.status=zone==="red"?"alert":"normal"; }
+
+  renderHRMiniChart();
 }
 
 function tickHR() {
@@ -180,6 +185,8 @@ function tickHR() {
   state.live.hr = Math.round(Math.max(50,Math.min(195,state.live.hr+noise+drift)));
   state.hrTarget += (Math.random()-0.48)*1.5;
   state.hrTarget  = Math.max(110,Math.min(165,state.hrTarget));
+  state.hrHistory.push(state.live.hr);
+  if (state.hrHistory.length > 60) state.hrHistory.shift();
   updateHRUI(state.live.hr);
 }
 
@@ -210,6 +217,134 @@ function updateElapsed() {
   if (el) el.textContent=`${state.live.elapsed}m`;
 }
 
+// ── P4 HR Chart ───────────────────────────────────────────────────────────
+
+function renderHRChart() {
+  const svg = document.getElementById("hrChart");
+  if (!svg) return;
+
+  const W = 340, H = 80, PAD_L = 28, PAD_R = 8, PAD_T = 6, PAD_B = 14;
+  const CW = W - PAD_L - PAD_R, CH = H - PAD_T - PAD_B;
+  const HR_MIN = 80, HR_MAX = 185;
+
+  // Simulated HR data: 31 points over 45 min
+  const raw = [
+    88,102,115,124,132,138,142,145,148,150,
+    152,158,162,168,160,155,148,142,138,135,
+    130,128,132,138,142,145,148,150,145,138,130
+  ];
+
+  function zoneColor(hr) {
+    return hr < 120 ? "#3b82f6" : hr <= 150 ? "#22c55e" : "#ef4444";
+  }
+  function toX(i) { return PAD_L + (i / (raw.length - 1)) * CW; }
+  function toY(hr) { return PAD_T + CH - ((hr - HR_MIN) / (HR_MAX - HR_MIN)) * CH; }
+
+  let out = "";
+
+  // Zone band backgrounds
+  const y120 = toY(120), y150 = toY(150);
+  out += `<rect x="${PAD_L}" y="${PAD_T}" width="${CW}" height="${y150 - PAD_T}" fill="rgba(239,68,68,0.06)" rx="2"/>`;
+  out += `<rect x="${PAD_L}" y="${y150}" width="${CW}" height="${y120 - y150}" fill="rgba(34,197,94,0.06)" rx="2"/>`;
+  out += `<rect x="${PAD_L}" y="${y120}" width="${CW}" height="${PAD_T + CH - y120}" fill="rgba(59,130,246,0.06)" rx="2"/>`;
+
+  // Zone boundary lines
+  out += `<line x1="${PAD_L}" y1="${y150}" x2="${W - PAD_R}" y2="${y150}" stroke="rgba(34,197,94,0.25)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  out += `<line x1="${PAD_L}" y1="${y120}" x2="${W - PAD_R}" y2="${y120}" stroke="rgba(59,130,246,0.25)" stroke-width="1" stroke-dasharray="3,3"/>`;
+
+  // Y-axis labels
+  out += `<text x="${PAD_L - 4}" y="${y150 + 3}" text-anchor="end" font-size="8" fill="rgba(34,197,94,0.7)" font-family="JetBrains Mono,monospace">150</text>`;
+  out += `<text x="${PAD_L - 4}" y="${y120 + 3}" text-anchor="end" font-size="8" fill="rgba(59,130,246,0.7)" font-family="JetBrains Mono,monospace">120</text>`;
+
+  // Smooth curve segments — split by zone color changes
+  // Build cubic bezier path per segment between consecutive same-zone pairs
+  function cpX(i, dir) { return toX(i) + dir * (CW / (raw.length - 1)) * 0.4; }
+
+  // Draw one smooth path per color run
+  let i = 0;
+  while (i < raw.length - 1) {
+    const col = zoneColor(raw[i]);
+    let j = i + 1;
+    while (j < raw.length && zoneColor(raw[j]) === col) j++;
+    // segment from i to j-1 (may be just one step)
+    let d = `M ${toX(i)} ${toY(raw[i])}`;
+    for (let k = i; k < j - 1; k++) {
+      const x1 = cpX(k, 1), y1 = toY(raw[k]);
+      const x2 = cpX(k + 1, -1), y2 = toY(raw[k + 1]);
+      d += ` C ${x1} ${y1}, ${x2} ${y2}, ${toX(k + 1)} ${toY(raw[k + 1])}`;
+    }
+    out += `<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+    i = j - 1;
+  }
+
+  // Dots — every other point to avoid clutter
+  raw.forEach((hr, i) => {
+    if (i % 2 !== 0) return;
+    const col = zoneColor(hr);
+    out += `<circle cx="${toX(i)}" cy="${toY(hr)}" r="3" fill="${col}" stroke="var(--s1)" stroke-width="1.5"/>`;
+  });
+
+  svg.innerHTML = out;
+}
+
+// ── C3 Live HR Mini-Chart ─────────────────────────────────────────────────
+
+function renderHRMiniChart() {
+  const svg = document.getElementById("hrMiniChart");
+  if (!svg) return;
+
+  const W = 280, H = 52, PAD_L = 26, PAD_R = 4, PAD_T = 4, PAD_B = 10;
+  const CW = W - PAD_L - PAD_R, CH = H - PAD_T - PAD_B;
+  const HR_MIN = 80, HR_MAX = 185;
+
+  const data = state.hrHistory.length >= 2 ? state.hrHistory : Array(60).fill(state.live.hr);
+
+  function zoneColor(hr) {
+    return hr < 120 ? "#3b82f6" : hr <= 150 ? "#22c55e" : "#ef4444";
+  }
+  function toX(i) { return PAD_L + (i / (data.length - 1)) * CW; }
+  function toY(hr) { return PAD_T + CH - ((hr - HR_MIN) / (HR_MAX - HR_MIN)) * CH; }
+
+  let out = "";
+
+  const y120 = toY(120), y150 = toY(150);
+  out += `<rect x="${PAD_L}" y="${PAD_T}" width="${CW}" height="${Math.max(0,y150-PAD_T)}" fill="rgba(239,68,68,0.05)" rx="1"/>`;
+  out += `<rect x="${PAD_L}" y="${y150}" width="${CW}" height="${Math.max(0,y120-y150)}" fill="rgba(34,197,94,0.05)" rx="1"/>`;
+  out += `<rect x="${PAD_L}" y="${y120}" width="${CW}" height="${Math.max(0,PAD_T+CH-y120)}" fill="rgba(59,130,246,0.05)" rx="1"/>`;
+
+  out += `<line x1="${PAD_L}" y1="${y150}" x2="${W-PAD_R}" y2="${y150}" stroke="rgba(34,197,94,0.2)" stroke-width="1" stroke-dasharray="2,2"/>`;
+  out += `<line x1="${PAD_L}" y1="${y120}" x2="${W-PAD_R}" y2="${y120}" stroke="rgba(59,130,246,0.2)" stroke-width="1" stroke-dasharray="2,2"/>`;
+
+  out += `<text x="${PAD_L-3}" y="${y150+3}" text-anchor="end" font-size="7" fill="rgba(34,197,94,0.6)" font-family="JetBrains Mono,monospace">150</text>`;
+  out += `<text x="${PAD_L-3}" y="${y120+3}" text-anchor="end" font-size="7" fill="rgba(59,130,246,0.6)" font-family="JetBrains Mono,monospace">120</text>`;
+
+  let i = 0;
+  const step = CW / (data.length - 1);
+  while (i < data.length - 1) {
+    const col = zoneColor(data[i]);
+    let j = i + 1;
+    while (j < data.length && zoneColor(data[j]) === col) j++;
+    let d = `M ${toX(i)} ${toY(data[i])}`;
+    for (let k = i; k < j - 1; k++) {
+      const cx1 = toX(k) + step * 0.4;
+      const cx2 = toX(k+1) - step * 0.4;
+      d += ` C ${cx1} ${toY(data[k])}, ${cx2} ${toY(data[k+1])}, ${toX(k+1)} ${toY(data[k+1])}`;
+    }
+    out += `<path d="${d}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+    i = j - 1;
+  }
+
+  const last = data[data.length - 1];
+  const lastCol = zoneColor(last);
+  out += `<circle cx="${toX(data.length-1)}" cy="${toY(last)}" r="3" fill="${lastCol}" stroke="#111114" stroke-width="1.5"/>`;
+  out += `<text x="${W-PAD_R-4}" y="${toY(last)-5}" text-anchor="end" font-size="8" fill="${lastCol}" font-weight="700" font-family="JetBrains Mono,monospace">${last}</text>`;
+
+  out += `<text x="${PAD_L}" y="${H}" text-anchor="start" font-size="7" fill="rgba(180,180,200,0.4)" font-family="JetBrains Mono,monospace">−60s</text>`;
+  out += `<text x="${W-PAD_R}" y="${H}" text-anchor="end" font-size="7" fill="rgba(180,180,200,0.4)" font-family="JetBrains Mono,monospace">now</text>`;
+
+  svg.innerHTML = out;
+}
+
 // ── Navigation ─────────────────────────────────────────────────────────────
 
 const COACH_PAGES = new Set(["c1","c2","c3","c4","c4b"]);
@@ -233,6 +368,8 @@ function go(pageId) {
     updateElapsed();
     startHRSim();
   }
+  if (pageId==="p4") renderHRChart();
+  if (pageId==="c3") { renderHRMiniChart(); startHRSim(); }
   if (pageId==="p5a"||pageId==="p5b") updateGymMap();
   if (pageId==="p2") renderExerciseDetail();
 }
@@ -277,14 +414,28 @@ function syncUserTraineePosition() {
   if (pos) { me.x=pos.x; me.y=pos.y; }
 }
 
+function updateP3Demo() {
+  const wrap = document.getElementById("p3DemoWrap");
+  const ph   = document.getElementById("p3DemoPlaceholder");
+  if (!wrap) return;
+  const item = state.exerciseData.find(x=>x.id===state.selectedExercise);
+  const src  = safeMediaPath(item?.media?.exerciseGif) || safeMediaPath(item?.media?.exerciseImg || item?.media?.equipmentImg);
+  if (src) {
+    wrap.innerHTML = `<img src="${src}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    wrap.innerHTML = `<span style="font-size:11px;color:var(--mu2)">${item ? item.name : "Select an exercise"}</span>`;
+  }
+}
+
 function syncLiveHeader() {
   const title = document.getElementById("liveExerciseTitle");
   const meta  = document.getElementById("liveExerciseMeta");
   const item  = state.exerciseData.find(x=>x.id===state.selectedExercise);
   if (!title||!meta) return;
-  if (!item) { title.textContent="—"; meta.textContent="Select an exercise"; return; }
+  if (!item) { title.textContent="—"; meta.textContent="Select an exercise"; updateP3Demo(); return; }
   title.textContent=item.name;
   meta.textContent =`Set ${state.live.setNum} of ${state.live.setTotal} · ${item.muscleLabel} · ${item.equipmentLabel}`;
+  updateP3Demo();
   const me = state.trainees.find(t=>t.id==="me");
   if (me) {
     me.exerciseId=state.selectedExercise; me.exerciseName=item.name;
@@ -335,10 +486,11 @@ function updateGymMap() {
     }
     buddies.forEach(t=>{
       if (!t.online||!t.pos) return;
+      const hrIcon = t.hr<120 ? "💙" : t.hr<=150 ? "💚" : "❤️";
       const el=document.createElement("div");
       el.className="map-trainee-item";
       el.innerHTML=`<div class="map-trainee-avatar" style="background:${t.dotBg};border-color:${t.dotColor}">${t.initials}</div>
-        <div class="map-trainee-info"><strong>${t.name}</strong><span>${t.exerciseName} · ${t.setInfo}</span></div>
+        <div class="map-trainee-info"><strong>${t.name} <span style="font-size:14px">${hrIcon}</span></strong><span>${t.exerciseName} · ${t.setInfo}</span></div>
         <span class="map-trainee-hr ${t.status==="alert"?"alert":"ok"}">${t.hr} bpm</span>`;
       traineeList.appendChild(el);
     });
@@ -451,9 +603,70 @@ document.body.addEventListener("click", e=>{
   const burstEl=e.target.closest("[data-burst]");
   if (burstEl) { emojiBurst(burstEl.dataset.burst); return; }
 
+  const modalOpen=e.target.closest("[data-modal]");
+  if (modalOpen) { openModal(modalOpen.dataset.modal, modalOpen.dataset.cheer||modalOpen.dataset.burst); return; }
+
+  const modalClose=e.target.closest("[data-modal-close]");
+  if (modalClose) { closeModal(modalClose.dataset.modalClose); return; }
+
   if (e.target.closest("#floatBtn")) { toggleFloatPanel(); return; }
   if (e.target.closest("#floatOverlay")) { toggleFloatPanel(); return; }
 });
+
+// ── Modal system ──────────────────────────────────────────────────────────
+
+function openModal(modalId, content) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  modal.classList.add("show");
+
+  if (modalId==="p6b" && content) {
+    const preview = document.getElementById("danmakuPreview");
+    if (preview) {
+      preview.innerHTML = "";
+      for (let i=0; i<3; i++) {
+        setTimeout(()=>{
+          const bubble = document.createElement("div");
+          bubble.className = "danmaku-bubble";
+          bubble.textContent = content;
+          bubble.style.top = `${20 + Math.random()*60}%`;
+          preview.appendChild(bubble);
+          setTimeout(()=>bubble.remove(), 4000);
+        }, i*800);
+      }
+    }
+  }
+
+  if (modalId==="p6c" && content) {
+    const preview = document.getElementById("emojiPreview");
+    if (preview) {
+      preview.innerHTML = "";
+      const centerX = preview.offsetWidth / 2;
+      const centerY = preview.offsetHeight / 2;
+      for (let i=0; i<12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        const dist = 60 + Math.random()*30;
+        const tx = Math.cos(angle) * dist;
+        const ty = Math.sin(angle) * dist;
+        const particle = document.createElement("div");
+        particle.className = "emoji-particle";
+        particle.textContent = content;
+        particle.style.left = centerX + "px";
+        particle.style.top = centerY + "px";
+        particle.style.setProperty("--tx", tx+"px");
+        particle.style.setProperty("--ty", ty+"px");
+        particle.style.animationDelay = (i*0.05)+"s";
+        preview.appendChild(particle);
+      }
+      setTimeout(()=>preview.innerHTML="", 1500);
+    }
+  }
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove("show");
+}
 
 const exerciseSearch=document.getElementById("exerciseSearch");
 if (exerciseSearch) {
