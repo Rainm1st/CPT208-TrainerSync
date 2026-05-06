@@ -6,7 +6,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
   server: {
-    port: 5208,
+    port: 5209,
     strictPort: true,
   },
   // Serve project root so /assets/... URLs resolve to the assets/ folder
@@ -19,6 +19,9 @@ export default defineConfig({
       targets: [{ src: 'assets', dest: '' }],
     }),
     VitePWA({
+      devOptions: {
+        enabled: false,
+      },
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       manifest: {
@@ -36,6 +39,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,gif,jpeg,jpg,woff2}'],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
     }),
   ],
