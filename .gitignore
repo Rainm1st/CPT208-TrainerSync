@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+dist-ssr
+dev-dist
+
+# Local env (never commit real credentials)
+.env
+.env.local
+.env.*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+*.log
+npm-debug.log*
