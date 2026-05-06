@@ -8,7 +8,7 @@ dist-ssr
 dev-dist
 
 # Local env (never commit real credentials)
-.env
+# .env
 # .env.local
 # .env.*.local
 
