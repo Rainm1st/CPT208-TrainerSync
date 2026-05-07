@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useSessionStore } from '../../store/sessionStore'
 import { useSocialStore } from '../../store/socialStore'
 import { BottomNav } from '../../components/BottomNav'
 import type { Session } from '../../lib/types'
+import { seedDemoSessions } from '../../lib/seedDemoSessions'
 
 const ACHIEVEMENTS = [
   { medal:'🥇', title:'PR Bench', sub:'100 kg' },
@@ -50,6 +51,7 @@ export default function ProfilePage() {
   const { profile, signOut }    = useAuthStore()
   const { recentSessions, fetchRecent } = useSessionStore()
   const { friends, fetchFriends }       = useSocialStore()
+  const [seedMsg, setSeedMsg] = useState<string | null>(null)
 
   const initials = (profile?.username ?? 'U').slice(0, 2).toUpperCase()
 
@@ -58,6 +60,15 @@ export default function ProfilePage() {
     fetchRecent(profile.id)
     fetchFriends(profile.id)
   }, [profile]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSeed() {
+    if (!profile) return
+    setSeedMsg('Seeding…')
+    const msg = await seedDemoSessions(profile.id)
+    fetchRecent(profile.id)
+    setSeedMsg(msg)
+    setTimeout(() => setSeedMsg(null), 4000)
+  }
 
   const totalSec = recentSessions.reduce((sum, s) => sum + (s.duration_s ?? 0), 0)
   const totalH   = Math.round(totalSec / 3600)
@@ -72,20 +83,6 @@ export default function ProfilePage() {
       <div className="app-shell" style={{ position:'relative', zIndex:1 }}>
         <div className="hbar">
           <span className="hbar-ttl">Profile</span>
-          <div className="hbar-actions">
-            <span className="hbar-icon" style={{ color:'var(--mu)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-            </span>
-            <button className="hbar-icon" onClick={signOut} style={{ border:0, background:'transparent', cursor:'pointer', color:'var(--mu)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-            </button>
-          </div>
         </div>
 
         <div className="content">
@@ -193,6 +190,34 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Account actions */}
+          <div style={{ display:'flex', flexDirection:'column', gap:7, paddingBottom:4 }}>
+            <button
+              className="btn-ghost"
+              style={{ width:'100%', padding:'11px 14px', fontSize:13, textAlign:'left', display:'flex', alignItems:'center', gap:8 }}
+              onClick={handleSeed}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              Generate Demo Data
+              {seedMsg && <span style={{ marginLeft:'auto', fontSize:11, color:'var(--lime)' }}>{seedMsg}</span>}
+            </button>
+            <button
+              className="btn-ghost"
+              style={{ width:'100%', padding:'11px 14px', fontSize:13, textAlign:'left', display:'flex', alignItems:'center', gap:8, color:'var(--z-red)', borderColor:'rgba(239,68,68,0.3)' }}
+              onClick={signOut}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Sign Out
+            </button>
           </div>
 
         </div>

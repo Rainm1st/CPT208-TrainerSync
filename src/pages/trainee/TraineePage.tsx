@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useSessionStore } from '../../store/sessionStore'
 import { usePresenceStore } from '../../store/presenceStore'
 import { BottomNav } from '../../components/BottomNav'
+import { useTheme } from '../../hooks/useTheme'
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' })
@@ -13,11 +14,19 @@ function fmtDuration(s: number | null) {
   return s ? `${Math.round(s / 60)} min` : '—'
 }
 
+function timeGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default function TraineePage() {
   const { profile }  = useAuthStore()
   const { recentSessions, fetchRecent } = useSessionStore()
   const { presences, fetchAll, subscribe } = usePresenceStore()
   const navigate = useNavigate()
+  const { theme, toggle } = useTheme()
 
   useEffect(() => {
     if (profile) fetchRecent(profile.id)
@@ -30,7 +39,6 @@ export default function TraineePage() {
   const weekCount  = recentSessions.filter(s => s.started_at >= oneWeekAgo).length
   const display    = recentSessions.slice(0, 2)
 
-  // Active buddies (exclude self)
   const buddies = presences.filter(p => p.trainee_id !== profile?.id).slice(0, 5)
 
   function hrColor(bpm: number | null) {
@@ -43,9 +51,20 @@ export default function TraineePage() {
       <div className="amb amb-1" /><div className="amb amb-2" /><div className="amb amb-3" />
       <div className="app-shell" style={{ position:'relative', zIndex:1 }}>
 
+        {/* Header */}
         <div className="hbar" style={{ borderBottom:0, paddingBottom:4 }}>
-          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'1.3rem', margin:0, fontWeight:900, letterSpacing:'.01em' }}>
-            <span style={{ color:'var(--tx)' }}>TRAINER</span><span style={{ color:'var(--brand)' }}>SYNC</span>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            {/* Theme toggle — top left, beside title */}
+            <button
+              className="theme-toggle-btn"
+              onClick={toggle}
+              title="Toggle theme"
+            >
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:'1.3rem', fontWeight:900, letterSpacing:'.01em' }}>
+              <span className="brand-primary">TRAINER</span><span className="brand-lime">SYNC</span>
+            </div>
           </div>
           <div className="hbar-actions">
             <span className="hbar-icon" style={{ color:'var(--mu)', position:'relative' }}>
@@ -67,14 +86,17 @@ export default function TraineePage() {
 
           {/* Hero stats block */}
           <div style={{ padding:'0 2px' }}>
-            <div style={{ fontSize:13, color:'var(--mu)', marginBottom:14 }}>
-              Good session, {profile?.username ?? 'Athlete'}
+            {/* hint — small greeting */}
+            <div style={{ fontSize:11, color:'var(--mu)', marginBottom:12 }}>
+              {timeGreeting()}, <span style={{ fontWeight:600 }}>{profile?.username ?? 'Athlete'}</span>
             </div>
             <div style={{ display:'flex', alignItems:'flex-end', gap:10, marginBottom:6 }}>
               <div className="hero-num">{weekCount || recentSessions.length || '—'}</div>
               <div style={{ paddingBottom:10 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:'var(--tx)' }}>sessions</div>
-                <div style={{ fontSize:11, color:'var(--mu)' }}>this week</div>
+                {/* functional label — bigger */}
+                <div style={{ fontSize:15, fontWeight:700, color:'var(--tx)' }}>sessions</div>
+                {/* hint — smaller */}
+                <div style={{ fontSize:10, color:'var(--mu)' }}>this week</div>
               </div>
             </div>
             <div className="level-bar-wrap">
@@ -83,7 +105,9 @@ export default function TraineePage() {
             </div>
             <div className="stat-row" style={{ marginTop:16 }}>
               <div className="stat-col">
+                {/* functional data — keep stat-val size */}
                 <div className="stat-val">{display[0]?.duration_s ? Math.round(display[0].duration_s / 60) : '—'}</div>
+                {/* hint unit — small */}
                 <div className="stat-unit">min today</div>
               </div>
               <div className="stat-col">
@@ -97,13 +121,13 @@ export default function TraineePage() {
             </div>
           </div>
 
-          {/* Start session button */}
+          {/* Primary CTA — prominent */}
           <button
             className="btn-primary"
-            style={{ fontSize:15, padding:14, letterSpacing:'.05em', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}
+            style={{ fontSize:17, padding:'16px 14px', letterSpacing:'.06em', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}
             onClick={() => navigate('/exercise')}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
               <path d="M2 8h1a4 4 0 0 1 0 8H2"/>
               <line x1="6" y1="12" x2="18" y2="12"/>
@@ -115,8 +139,12 @@ export default function TraineePage() {
           {/* Nearby Now */}
           <div>
             <div className="row-between" style={{ marginBottom:10 }}>
-              <div className="sec-lbl" style={{ marginBottom:0 }}>Nearby Now {buddies.length > 0 && `(${buddies.length})`}</div>
-              <span className="t-b fs11" style={{ cursor:'pointer' }} onClick={() => navigate('/buddies')}>Map →</span>
+              {/* section header — bigger */}
+              <div className="sec-lbl" style={{ marginBottom:0, fontSize:13 }}>
+                Nearby Now {buddies.length > 0 && <span style={{ color:'var(--lime)', fontWeight:700 }}>{buddies.length}</span>}
+              </div>
+              {/* functional nav link — bigger */}
+              <span style={{ fontSize:13, fontWeight:700, color:'var(--brand)', cursor:'pointer' }} onClick={() => navigate('/buddies')}>Map →</span>
             </div>
             {buddies.length > 0 ? (
               <div className="buddy-strip">
@@ -132,7 +160,9 @@ export default function TraineePage() {
                         <div className="online-ring" style={{ borderColor:ring }} />
                         <div className="avatar av-md">{init}</div>
                       </div>
-                      <div className="buddy-chip-name">{p.profiles?.username ?? init}</div>
+                      {/* functional name — larger */}
+                      <div className="buddy-chip-name" style={{ fontSize:12 }}>{p.profiles?.username ?? init}</div>
+                      {/* hint status — keep small */}
                       <div className={`buddy-chip-status${statusCls ? ' '+statusCls : ''}`}>{status}</div>
                     </div>
                   )
@@ -150,7 +180,7 @@ export default function TraineePage() {
                       <div className="online-ring" style={{ borderColor:b.ring }} />
                       <div className="avatar av-md">{b.init}</div>
                     </div>
-                    <div className="buddy-chip-name">{b.name}</div>
+                    <div className="buddy-chip-name" style={{ fontSize:12 }}>{b.name}</div>
                     <div className={`buddy-chip-status${(b as any).cls ? ' '+(b as any).cls : ''}`}>{b.status}</div>
                   </div>
                 ))}
@@ -161,23 +191,27 @@ export default function TraineePage() {
           {/* Recent sessions */}
           <div>
             <div className="row-between" style={{ marginBottom:10 }}>
-              <div className="sec-lbl" style={{ marginBottom:0 }}>Recent</div>
-              <span className="t-b fs11" style={{ cursor:'pointer' }} onClick={() => navigate('/profile')}>All →</span>
+              <div className="sec-lbl" style={{ marginBottom:0, fontSize:13 }}>Recent</div>
+              <span style={{ fontSize:13, fontWeight:700, color:'var(--brand)', cursor:'pointer' }} onClick={() => navigate('/profile')}>All →</span>
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
               {display.length > 0 ? display.map(s => (
                 <div key={s.id} className="list-item" onClick={() => navigate('/summary', { state: { sessionId: s.id } })} style={{ cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px' }}>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:600, color:'var(--tx)' }}>{s.exercise_name}</div>
-                    <div style={{ fontSize:11, color:'var(--mu)', marginTop:2 }}>{fmtDate(s.started_at)} · {fmtDuration(s.duration_s)}</div>
+                    {/* functional — exercise name bigger */}
+                    <div style={{ fontSize:14, fontWeight:700, color:'var(--tx)' }}>{s.exercise_name}</div>
+                    {/* hint — date/duration smaller */}
+                    <div style={{ fontSize:10, color:'var(--mu)', marginTop:2 }}>{fmtDate(s.started_at)} · {fmtDuration(s.duration_s)}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:hrColor(s.avg_hr) }}>{s.avg_hr ?? '—'} bpm</div>
+                    {/* functional data — bpm bigger */}
+                    <div style={{ fontSize:15, fontWeight:700, color:hrColor(s.avg_hr) }}>{s.avg_hr ?? '—'} bpm</div>
+                    {/* hint label — small */}
                     <div style={{ fontSize:10, color:'var(--mu)' }}>avg HR</div>
                   </div>
                 </div>
               )) : (
-                <div className="list-item" style={{ padding:'12px 14px', color:'var(--mu)', fontSize:13, textAlign:'center' }}>
+                <div className="list-item" style={{ padding:'12px 14px', color:'var(--mu)', fontSize:12, textAlign:'center' }}>
                   No sessions yet — start your first!
                 </div>
               )}

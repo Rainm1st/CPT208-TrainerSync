@@ -5,12 +5,6 @@ import { usePresenceStore } from '../../store/presenceStore'
 import { BottomNav } from '../../components/BottomNav'
 import { GymFloorPlan } from '../../components/GymFloorPlan'
 import type { GymDot } from '../../components/GymFloorPlan'
-import { GymLeafletMap } from '../../components/GymLeafletMap'
-import type { LiveDot } from '../../components/GymLeafletMap'
-import { useGymLocation } from '../../hooks/useGymLocation'
-import { useCompassHeading } from '../../hooks/useCompassHeading'
-
-const MAP_MODE_KEY = 'map_mode_v1'
 
 const STATIC_DOTS: GymDot[] = [
   { id: 'xm',  x: 0.30, y: 0.45, initials: 'XM',  color: 'var(--z-green)' },
@@ -29,50 +23,16 @@ const FILTERS = ['All', 'Friends', 'Same Ex.', '10m']
 export default function BuddiesPage() {
   const [filter, setFilter] = useState('All')
   const [burst, setBurst]   = useState<string | null>(null)
-  const [mapMode, setMapMode] = useState<'floor' | 'satellite'>(() =>
-    (localStorage.getItem(MAP_MODE_KEY) as 'floor' | 'satellite') ?? 'floor'
-  )
   const navigate = useNavigate()
 
   const { profile }                                = useAuthStore()
-  const { presences, fetchAll, subscribe, upsert } = usePresenceStore()
-  const { pos, rawCoords, accuracy, error: gpsError, hasGps, debug, gpsHeading, calibrate } = useGymLocation()
-  const { heading: compassHeading, needsPermission, requestPermission } = useCompassHeading()
-
-  const heading = compassHeading ?? gpsHeading
-
-  function toggleMapMode() {
-    setMapMode(m => {
-      const next = m === 'floor' ? 'satellite' : 'floor'
-      localStorage.setItem(MAP_MODE_KEY, next)
-      return next
-    })
-  }
+  const { presences, fetchAll, subscribe } = usePresenceStore()
 
   useEffect(() => {
     fetchAll()
     const unsub = subscribe()
     return unsub
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Push position + raw coords to presence whenever GPS updates
-  useEffect(() => {
-    if (!pos || !profile?.id) return
-    const isActive = presences.some(p => p.trainee_id === profile.id)
-    if (!isActive) return
-    upsert(profile.id, {
-      gym_x: pos.x, gym_y: pos.y,
-      raw_lat: rawCoords?.lat ?? null,
-      raw_lng: rawCoords?.lng ?? null,
-    })
-  }, [pos]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (heading == null || !profile?.id) return
-    const isActive = presences.some(p => p.trainee_id === profile.id)
-    if (!isActive) return
-    upsert(profile.id, { heading })
-  }, [heading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function sendBurst(e: string) { setBurst(e); setTimeout(() => setBurst(null), 800) }
 
@@ -96,10 +56,9 @@ export default function BuddiesPage() {
 
   const showReal = buddies.length > 0
 
-  // SVG floor plan dots
   const youDot: GymDot = {
-    id: 'you', x: pos?.x ?? 0.5, y: pos?.y ?? 0.5,
-    initials: 'YOU', color: 'var(--brand)', isYou: true, heading,
+    id: 'you', x: 0.42, y: 0.55,
+    initials: 'YOU', color: 'var(--brand)', isYou: true,
   }
   const mapDots: GymDot[] = showReal
     ? [youDot, ...buddies.slice(0, 6).map((p, i) => ({
@@ -107,35 +66,10 @@ export default function BuddiesPage() {
         x: p.gym_x ?? FALLBACK_POS[i % FALLBACK_POS.length].x,
         y: p.gym_y ?? FALLBACK_POS[i % FALLBACK_POS.length].y,
         initials: (p.profiles?.username ?? p.trainee_id).slice(0, 2).toUpperCase(),
-        color: dotColor(p.current_hr), heading: p.heading ?? null,
+        color: dotColor(p.current_hr),
         onClick: () => navigate('/buddy/' + p.trainee_id),
       }))]
     : STATIC_DOTS
-
-  // Leaflet live dots — need real lat/lng
-  const youLiveDot: LiveDot | null = rawCoords ? {
-    id: 'you', lat: rawCoords.lat, lng: rawCoords.lng,
-    initials: 'YOU', color: 'var(--brand)', isYou: true,
-    accuracy: accuracy ?? undefined, heading,
-  } : null
-  const liveDots: LiveDot[] = [
-    ...(youLiveDot ? [youLiveDot] : []),
-    ...buddies.slice(0, 6).filter(p => p.raw_lat != null && p.raw_lng != null).map(p => ({
-      id: p.trainee_id,
-      lat: p.raw_lat!, lng: p.raw_lng!,
-      initials: (p.profiles?.username ?? p.trainee_id).slice(0, 2).toUpperCase(),
-      color: dotColor(p.current_hr), heading: p.heading ?? null,
-      onClick: () => navigate('/buddy/' + p.trainee_id),
-    })),
-  ]
-
-  const overlayBtnStyle: React.CSSProperties = {
-    position: 'absolute', top: 7, zIndex: 10,
-    background: 'rgba(0,0,0,0.55)',
-    border: '1px solid rgba(255,255,255,0.18)',
-    borderRadius: 20, padding: '3px 9px',
-    color: 'var(--mu2)', fontSize: 10, fontWeight: 700, cursor: 'pointer',
-  }
 
   return (
     <>
@@ -162,31 +96,9 @@ export default function BuddiesPage() {
         </div>
 
         <div className="content">
-          {/* Map panel */}
-          <div className="gym-map-container" style={{ height: 210, position: 'relative' }}>
-            {mapMode === 'satellite'
-              ? <GymLeafletMap dots={liveDots} initialCenter={rawCoords ?? undefined} />
-              : <GymFloorPlan dots={mapDots} />
-            }
-
-            {/* Map mode toggle */}
-            <button onClick={toggleMapMode} style={{ ...overlayBtnStyle, right: 7 }}>
-              {mapMode === 'floor' ? '🛰 satellite' : '🗺 floor plan'}
-            </button>
-
-            {/* Recalibrate (floor plan only) */}
-            {mapMode === 'floor' && hasGps && (
-              <button onClick={calibrate} style={{ ...overlayBtnStyle, right: 105 }}>
-                🎯 recalibrate
-              </button>
-            )}
-
-            {/* iOS compass permission */}
-            {needsPermission && (
-              <button onClick={requestPermission} style={{ ...overlayBtnStyle, left: 7 }}>
-                🧭 compass
-              </button>
-            )}
+          {/* Floor plan map */}
+          <div className="gym-map-container" style={{ height: 210 }}>
+            <GymFloorPlan dots={mapDots} />
           </div>
 
           {/* Legend */}
@@ -195,37 +107,8 @@ export default function BuddiesPage() {
               <span className="fs10 t-m"><span className="zone-dot" style={{ background:'var(--z-blue)', display:'inline-block', marginRight:3 }} />Resting</span>
               <span className="fs10 t-m"><span className="zone-dot" style={{ background:'var(--z-green)', display:'inline-block', marginRight:3 }} />Training</span>
               <span className="fs10 t-m"><span className="zone-dot" style={{ background:'var(--z-red)', display:'inline-block', marginRight:3 }} />High HR</span>
-              <span className="fs10 t-m" style={{ marginLeft:'auto' }}>
-                {pos ? '📡 GPS' : '⚪ Waiting…'}
-              </span>
             </div>
           </div>
-
-          {/* GPS debug panel */}
-          {debug && (
-            <div className="card" style={{ padding:'7px 10px', fontFamily:'monospace' }}>
-              <div className="fs10 fw6" style={{ marginBottom:4, color:'var(--mu2)' }}>GPS DEBUG</div>
-              <div className="fs10 t-m" style={{ lineHeight:1.7 }}>
-                lat: {debug.lat.toFixed(6)}<br/>
-                lng: {debug.lng.toFixed(6)}<br/>
-                accuracy: ±{Math.round(debug.accuracy)}m<br/>
-                map x: {pos?.x.toFixed(3)}  y: {pos?.y.toFixed(3)}<br/>
-                updates: {debug.updateCount} · {Math.round((Date.now() - debug.lastAt) / 1000)}s ago<br/>
-                compass: {heading != null ? `${Math.round(heading)}°` : needsPermission ? 'tap 🧭' : 'no sensor'}<br/>
-                gps hdg: {debug.gpsHeading != null ? `${Math.round(debug.gpsHeading)}°` : 'n/a'}
-              </div>
-            </div>
-          )}
-          {!debug && !gpsError && (
-            <div className="card" style={{ padding:'7px 10px' }}>
-              <div className="fs10 t-m">⏳ Waiting for GPS fix…</div>
-            </div>
-          )}
-          {gpsError && (
-            <div className="card" style={{ padding:'7px 10px' }}>
-              <div className="fs10" style={{ color:'var(--z-red)' }}>{gpsError}</div>
-            </div>
-          )}
 
           {/* Filter chips */}
           <div className="chips">
