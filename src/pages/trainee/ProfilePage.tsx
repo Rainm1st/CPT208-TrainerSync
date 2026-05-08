@@ -80,7 +80,7 @@ export default function ProfilePage() {
   return (
     <>
       <div className="amb amb-1" /><div className="amb amb-2" /><div className="amb amb-3" />
-      <div className="app-shell" style={{ position:'relative', zIndex:1 }}>
+      <div className="app-shell" style={{ position:'relative', zIndex:1, height:'100vh', overflow:'hidden' }}>
         <div className="hbar">
           <span className="hbar-ttl">Profile</span>
         </div>

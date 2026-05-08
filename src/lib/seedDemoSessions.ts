@@ -19,27 +19,14 @@ function hrCurve(duration_s: number): HrPoint[] {
 }
 
 const DEMO_SESSIONS = [
-  {
-    exercise_name: 'Bench Press',
-    exercise_id:   'bench_press',
-    duration_s:    2400,  // 40 min
-    sets_done:     5,
-    daysAgo:       1,
-  },
-  {
-    exercise_name: 'Squat',
-    exercise_id:   'squat',
-    duration_s:    2700,  // 45 min
-    sets_done:     6,
-    daysAgo:       3,
-  },
-  {
-    exercise_name: 'Lat Pulldown',
-    exercise_id:   'lat_pulldown',
-    duration_s:    1800,  // 30 min
-    sets_done:     4,
-    daysAgo:       5,
-  },
+  { exercise_name:'Bench Press',      exercise_id:'bench_press',      duration_s:2400, sets_done:5, daysAgo:1  },
+  { exercise_name:'Squat',            exercise_id:'squat',            duration_s:2700, sets_done:6, daysAgo:2  },
+  { exercise_name:'Lat Pulldown',     exercise_id:'lat_pulldown',     duration_s:1800, sets_done:4, daysAgo:3  },
+  { exercise_name:'Deadlift',         exercise_id:'deadlift',         duration_s:3000, sets_done:5, daysAgo:5  },
+  { exercise_name:'Overhead Press',   exercise_id:'overhead_press',   duration_s:1980, sets_done:4, daysAgo:7  },
+  { exercise_name:'Barbell Row',      exercise_id:'barbell_row',      duration_s:2100, sets_done:5, daysAgo:9  },
+  { exercise_name:'Incline Bench',    exercise_id:'incline_bench',    duration_s:2280, sets_done:4, daysAgo:11 },
+  { exercise_name:'Romanian Deadlift',exercise_id:'romanian_deadlift',duration_s:2460, sets_done:4, daysAgo:13 },
 ]
 
 export async function seedDemoSessions(traineeId: string): Promise<string> {

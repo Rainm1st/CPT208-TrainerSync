@@ -150,10 +150,7 @@ export default function SummaryPage() {
                   <rect x="0" y="18" width="340" height="35" fill="rgba(34,197,94,0.07)" />
                   <line x1="0" y1="18" x2="340" y2="18" stroke="rgba(239,68,68,0.35)"  strokeWidth="1" strokeDasharray="4 3" />
                   <line x1="0" y1="53" x2="340" y2="53" stroke="rgba(96,165,250,0.35)" strokeWidth="1" strokeDasharray="4 3" />
-                  <polyline
-                    points="0,58 34,50 68,35 102,28 136,30 170,32 204,18 238,32 272,38 306,44 340,52"
-                    fill="none" stroke="var(--z-green)" strokeWidth="2" strokeLinejoin="round"
-                  />
+                  <text x="170" y="44" textAnchor="middle" fill="rgba(255,255,255,0.15)" fontSize="10">No HR data recorded</text>
                 </>
               )}
             </svg>
