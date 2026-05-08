@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useSessionStore } from '../../store/sessionStore'
 import type { Exercise } from '../../data/exercises'
 import type { SetRecord } from './TrainingPage'
+import { useTheme } from '../../hooks/useTheme'
 
 const ACHIEVEMENTS = [
   { medal:'🥇', title:'PR Bench Press', sub:'Vol. 3,000 kg' },
@@ -23,13 +24,23 @@ export default function SummaryPage() {
     setLog?: SetRecord[]; liveSamples?: number[]
   } | null
 
+  const { theme, toggle } = useTheme()
   const { currentSessionDetail, fetchSessionDetail } = useSessionStore()
 
   useEffect(() => {
     if (state?.sessionId) fetchSessionDetail(state.sessionId)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [setLog, setSetLog] = useState<SetRecord[]>(state?.setLog ?? [])
+  const [setLog, setSetLog]       = useState<SetRecord[]>(state?.setLog ?? [])
+
+  const isFreshSession = Array.isArray(state?.liveSamples)
+  const [isGenerating, setIsGenerating] = useState(isFreshSession)
+
+  useEffect(() => {
+    if (!isFreshSession) return
+    const t = setTimeout(() => setIsGenerating(false), 5000)
+    return () => clearTimeout(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sd = currentSessionDetail
 
@@ -39,6 +50,24 @@ export default function SummaryPage() {
   const setsDone    = setLog.length || sd?.sets_done || state?.sets || 8
   const exName      = sd?.exercise_name ?? state?.exercise?.name ?? 'Chest Day'
   const dateStr     = sd ? new Date(sd.started_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : 'Today'
+
+  function buildRecap() {
+    const intensity = maxHr > 160 ? 'high-intensity' : maxHr > 140 ? 'moderate' : 'steady'
+    const zoneNote  = hasRealHR
+      ? (targetPct >= 60
+          ? `spending ${targetPct}% of the session in the target zone — solid zone discipline`
+          : `with ${targetPct}% in the target zone — pacing can be dialled in further`)
+      : 'tracking sets carefully throughout'
+    return `You completed ${setsDone} sets of ${exName} over ${durationMin} min, averaging ${avgHr} bpm with a peak of ${maxHr} bpm. A ${intensity} effort, ${zoneNote}.`
+  }
+
+  function buildSuggestion() {
+    if (maxHr > 165) return `Your HR peaked quite high today. Next session, extend rest periods to 90 s between sets and finish with a 10-min light walk — it clears lactate noticeably faster than sitting still.`
+    if (hasRealHR && targetPct < 50) return `Less than half the session landed in the target zone. A structured 5-min warm-up (light cardio + dynamic stretch) before the main work will help you hit the zone earlier and hold it.`
+    if (durationMin < 20) return `Short session today — totally fine for a deload or recovery day. When you're ready to push again, aim for 35–45 min to maximise zone exposure and training stimulus.`
+    if (setsDone >= 8) return `Good volume. Let the same muscle group rest 48 h before hitting it again — active recovery tomorrow (a walk or light stretch) will accelerate repair more than a full rest day.`
+    return `Consistent effort. To keep progressing, add 2.5 kg or one extra set next time you run this exercise. Small, regular overload compounds quickly over a few weeks.`
+  }
 
   // Use live samples from TrainingPage first, fall back to DB hr_samples
   const liveSamples: number[] = state?.liveSamples ?? []
@@ -89,7 +118,12 @@ export default function SummaryPage() {
         <div className="hbar">
           <button className="hbar-back" onClick={() => navigate('/map')}>← Back</button>
           <span className="hbar-ttl">Session Report</span>
-          <span className="fs11 t-m">{dateStr}</span>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <span className="fs11 t-m">{dateStr}</span>
+            <button className="theme-toggle-btn" style={{ width:28, height:28, fontSize:13 }} onClick={toggle} title="Toggle theme">
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
+          </div>
         </div>
 
         <div className="content" style={{ gap:7 }}>
@@ -245,12 +279,76 @@ export default function SummaryPage() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="btn-row" style={{ gap:8 }}>
-            <button className="btn-ghost" style={{ flex:1, fontSize:12, padding:'10px 8px' }}>Share Log</button>
-            <button className="btn-primary" style={{ flex:2, fontSize:13 }} onClick={() => navigate('/map')}>Back to Home</button>
+          {/* AI Assistant recap */}
+          <div className="card" style={{ padding:'12px 13px 11px' }}>
+            <style>{`
+              @keyframes ts-star-spin  { from{transform:rotate(0deg)}  to{transform:rotate(360deg)} }
+              @keyframes ts-dot-pulse  { 0%,100%{opacity:.35} 50%{opacity:1} }
+              @keyframes ts-text-in    { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+              .ts-star { animation: ts-star-spin 2.2s linear infinite; transform-origin:center; display:block; }
+              .ts-thinking { animation: ts-dot-pulse 1.5s ease-in-out infinite; }
+              .ts-text-reveal { animation: ts-text-in 0.45s ease forwards; }
+            `}</style>
+
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:9 }}>
+              <span style={{ fontSize:26, lineHeight:1 }}>🐱</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:15, fontWeight:900, letterSpacing:'.02em', lineHeight:1.1 }}>
+                  <span className="brand-primary">TRAINER</span><span className="brand-lime">SYNC</span>
+                </div>
+                <div style={{ fontSize:8, color:'var(--mu)', letterSpacing:'1px', textTransform:'uppercase', marginTop:1 }}>Intelligent Assistant</div>
+              </div>
+            </div>
+
+            <div style={{ padding:'10px 11px', borderRadius:11, background:'rgba(65,120,255,0.08)', border:'1px solid rgba(65,120,255,0.22)' }}>
+
+              {/* ── Recap block ── */}
+              <div style={{ marginBottom:9 }}>
+                <span style={{ fontSize:10, fontWeight:700, color:'var(--brand)' }}>Recap</span>
+                {isGenerating ? (
+                  <div className="ts-thinking" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'11px 0', color:'var(--mu)', fontSize:11 }}>
+                    <svg className="ts-star" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color:'rgba(65,120,255,0.7)', flexShrink:0 }}>
+                      <path d="M12 2 L13.8 9.8 L22 12 L13.8 14.2 L12 22 L10.2 14.2 L2 12 L10.2 9.8 Z"/>
+                    </svg>
+                    thinking...
+                  </div>
+                ) : (
+                  <div className="ts-text-reveal" style={{ fontSize:10, lineHeight:1.65, color:'var(--tx)', marginTop:4 }}>
+                    {buildRecap()}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ height:1, background:'var(--bd)', marginBottom:9 }} />
+
+              {/* ── Suggestion block ── */}
+              <div>
+                <span style={{ fontSize:10, fontWeight:700, color:'var(--lime)' }}>Suggestion</span>
+                {isGenerating ? (
+                  <div className="ts-thinking" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'11px 0', color:'var(--mu)', fontSize:11 }}>
+                    <svg className="ts-star" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color:'rgba(65,120,255,0.7)', flexShrink:0 }}>
+                      <path d="M12 2 L13.8 9.8 L22 12 L13.8 14.2 L12 22 L10.2 14.2 L2 12 L10.2 9.8 Z"/>
+                    </svg>
+                    thinking...
+                  </div>
+                ) : (
+                  <div className="ts-text-reveal" style={{ fontSize:10, lineHeight:1.65, color:'var(--tx)', marginTop:4 }}>
+                    {buildSuggestion()}
+                  </div>
+                )}
+              </div>
+
+            </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Fixed action bar */}
+      <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:100, background:'var(--s0)', borderTop:'1px solid var(--bd)' }}>
+        <div style={{ maxWidth:430, margin:'0 auto', padding:'10px 16px 20px', display:'flex', gap:8 }}>
+          <button className="btn-ghost" style={{ flex:'0 0 auto', width:'32%', fontSize:12, padding:'10px 8px' }}>Share Log</button>
+          <button className="btn-primary" style={{ flex:1, width:'auto', fontSize:13 }} onClick={() => navigate('/map')}>Back to Home</button>
         </div>
       </div>
     </>

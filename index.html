@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <script>
       if (['localhost', '127.0.0.1'].includes(location.hostname)) {
@@ -16,7 +16,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>TrainerSync</title>
 
-    <!-- Theme -->
+    <!-- Theme: apply before paint to avoid flash -->
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark')</script>
     <meta name="theme-color" content="#060d1b" />
 
     <!-- Fonts -->

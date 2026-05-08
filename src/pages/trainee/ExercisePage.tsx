@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BottomNav } from '../../components/BottomNav'
+import { useTheme } from '../../hooks/useTheme'
 
 interface EquipEntry {
   id: string
@@ -72,6 +73,7 @@ const EQUIP_LABEL: Record<string, string> = {
 }
 
 export default function ExercisePage() {
+  const { theme, toggle } = useTheme()
   const [search, setSearch]       = useState('')
   const [muscle, setMuscle]       = useState<typeof MUSCLE_GROUPS[number]>('all')
   const [equip, setEquip]         = useState<typeof EQUIP_CATS[number]>('all')
@@ -125,7 +127,9 @@ export default function ExercisePage() {
           <div className="hbar">
             <button className="hbar-back" onClick={() => navigate(-1)}>← Back</button>
             <span className="hbar-ttl">Exercises</span>
-            <span />
+            <button className="theme-toggle-btn" style={{ width:28, height:28, fontSize:13 }} onClick={toggle} title="Toggle theme">
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
           </div>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: loadError ? 'var(--z-red)' : 'var(--mu)', fontSize: 13 }}>

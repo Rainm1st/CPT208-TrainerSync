@@ -6,6 +6,7 @@ import { useSocialStore } from '../../store/socialStore'
 import { BottomNav } from '../../components/BottomNav'
 import type { Session } from '../../lib/types'
 import { seedDemoSessions } from '../../lib/seedDemoSessions'
+import { useTheme } from '../../hooks/useTheme'
 
 const ACHIEVEMENTS = [
   { medal:'🥇', title:'PR Bench', sub:'100 kg' },
@@ -47,6 +48,7 @@ function hrColor(bpm: number | null) {
 }
 
 export default function ProfilePage() {
+  const { theme, toggle } = useTheme()
   const navigate  = useNavigate()
   const { profile, signOut }    = useAuthStore()
   const { recentSessions, fetchRecent } = useSessionStore()
@@ -82,7 +84,11 @@ export default function ProfilePage() {
       <div className="amb amb-1" /><div className="amb amb-2" /><div className="amb amb-3" />
       <div className="app-shell" style={{ position:'relative', zIndex:1, height:'100vh', overflow:'hidden' }}>
         <div className="hbar">
+          <span style={{ width:28 }} />
           <span className="hbar-ttl">Profile</span>
+          <button className="theme-toggle-btn" style={{ width:28, height:28, fontSize:13 }} onClick={toggle} title="Toggle theme">
+            {theme === 'dark' ? '☀' : '☾'}
+          </button>
         </div>
 
         <div className="content">

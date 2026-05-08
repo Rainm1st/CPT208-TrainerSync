@@ -3,23 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useSessionStore } from '../../store/sessionStore'
 import { usePresenceStore } from '../../store/presenceStore'
-import type { Exercise } from '../../data/exercises'
 import { exercises } from '../../data/exercises'
-import { type BiMsg, type MsgTab, GYM_TAB_ICON, getMsgList } from '../../lib/gymMessages'
+import { useTheme } from '../../hooks/useTheme'
 
 const TOTAL_SETS = 5
 
 export type SetRecord = { exercise: string; setNum: number; hr: number }
-
-interface TrainChatMsg { id: number; name: string; initials: string; textEn: string; textZh: string; isCoach: boolean; isSelf?: boolean }
-
-const TRAIN_DEMO: { delay: number; name: string; initials: string; textEn: string; textZh: string; isCoach: boolean }[] = [
-  { delay:2000,  name:'Coach Wang', initials:'CW', textEn:'Looking strong! Keep the tempo.',    textZh:'状态不错！保持节奏。',   isCoach:true  },
-  { delay:5500,  name:'Xiao Ming',  initials:'XM', textEn:'How many sets left?',                textZh:'还有几组？',           isCoach:false },
-  { delay:9000,  name:'Coach Wang', initials:'CW', textEn:'Control the negative on each rep.',  textZh:'控制离心阶段。',        isCoach:true  },
-  { delay:14000, name:'Xiao Hong',  initials:'XH', textEn:'Great form! 💪',                     textZh:'动作很标准！💪',        isCoach:false },
-  { delay:19000, name:'Coach Wang', initials:'CW', textEn:'Rest 90s then finish strong.',       textZh:'休息90秒再冲最后几组。', isCoach:true  },
-]
 
 function hrZone(bpm: number) {
   if (bpm < 120) return { color:'var(--z-blue)',  label:'Warm Up Zone',   bg:'bth-blue',  hint:'BLUE · slow pulse · build up' }
@@ -27,7 +16,6 @@ function hrZone(bpm: number) {
   return              { color:'var(--z-red)',   label:'High Intensity!', bg:'bth-red',   hint:'RED · fast pulse · ease off!' }
 }
 
-// Normalise exercise data — works for both old Exercise and new ExEntry from JSON
 function resolveEx(raw: any): {
   name: string; id: string; sets: string; reps: string; icon: string
   muscle: string; equipment: string; level: string; mechanics: string; instructions: string
@@ -39,7 +27,6 @@ function resolveEx(raw: any): {
   const equipLabel: Record<string, string> = {
     free_weight:'Free Weight', cable:'Cable', machine:'Machine',
   }
-  // New ExEntry shape from JSON
   const primaryMuscleId = raw?.primary_muscle_ids?.[0] ?? ''
   const equipId         = raw?.equipment_ids?.[0] ?? ''
   return {
@@ -74,6 +61,7 @@ export default function TrainingPage() {
     state?.demoUrls
     ?? (state?.demoUrl && state?.exercise?.id ? { [state.exercise.id]: state.demoUrl } : {})
 
+  const { theme, toggle } = useTheme()
   const { profile }    = useAuthStore()
   const { startSession, endSession, recordHR } = useSessionStore()
   const { upsert: upsertPresence, clear: clearPresence } = usePresenceStore()
@@ -90,17 +78,10 @@ export default function TrainingPage() {
   const [elapsed, setElapsed]       = useState(0)
   const [currentSet, setCurrentSet] = useState(0)
   const [setLog, setSetLog]         = useState<SetRecord[]>([])
-  const [msgTab,       setMsgTab]      = useState<MsgTab>('HELP')
-  const [armedMsg,     setArmedMsg]    = useState<BiMsg | null>(null)
-  const [targetBuddy,  setTargetBuddy] = useState<string | null>(null)
-  const [chatMsgs,     setChatMsgs]    = useState<TrainChatMsg[]>([])
-  const chatEndRef = useRef<HTMLDivElement>(null)
-  const chatIdRef  = useRef(0)
   const [showExPicker, setShowExPicker] = useState(false)
 
-  const rawEx   = exerciseQueue[Math.min(exIndex, exerciseQueue.length - 1)] ?? exercises[0]
-  const ex      = resolveEx(rawEx)
-  const demoUrl = demoUrls[rawEx?.id] ?? null
+  const rawEx = exerciseQueue[Math.min(exIndex, exerciseQueue.length - 1)] ?? exercises[0]
+  const ex    = resolveEx(rawEx)
 
   const zone = hrZone(hr)
   const pct  = Math.min(100, Math.max(5, Math.round((hr - 60) / 1.2)))
@@ -139,15 +120,6 @@ export default function TrainingPage() {
     return () => clearInterval(id)
   }, [profile]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    const timers = TRAIN_DEMO.map(m =>
-      setTimeout(() => setChatMsgs(prev => [...prev, { id: chatIdRef.current++, ...m }]), m.delay)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [])
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior:'smooth' }) }, [chatMsgs])
-
   function fmtMin(s: number) { return `${Math.floor(s / 60)}m` }
 
   function handleQueueSwitch(idx: number) {
@@ -167,41 +139,37 @@ export default function TrainingPage() {
     setCountsRef.current[ex.id || String(exIndex)] = next
   }
 
-  async function handleEndSession() {
+  function handleEndSession() {
     const samples = samplesRef.current
     const avg_hr  = samples.length ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length) : hrRef.current
     const max_hr  = samples.length ? Math.max(...samples) : hrRef.current
     const sid     = sessionIdRef.current
-    if (sid) await endSession(sid, { avg_hr, max_hr, sets_done: setLog.length, duration_s: elapsedRef.current })
-    if (profile) await clearPresence(profile.id)
+    // Fire-and-forget — don't block navigation on network calls
+    if (sid) endSession(sid, { avg_hr, max_hr, sets_done: setLog.length, duration_s: elapsedRef.current })
+    if (profile) clearPresence(profile.id)
     navigate('/summary', { state: { sessionId: sid, elapsed: elapsedRef.current, sets: setLog.length, exercise: rawEx, setLog, liveSamples: samplesRef.current } })
   }
-
-  const buddies = [
-    { init:'XM', name:'Xiao Ming', status:'Bench 3/5', emoji:'💪', bg:'linear-gradient(135deg,rgba(65,120,255,0.35),rgba(29,200,187,0.25))', ring:'var(--z-green)' },
-    { init:'XH', name:'Xiao Hong', status:'High HR',   emoji:'🔥', bg:'linear-gradient(135deg,rgba(239,68,68,0.3),rgba(245,158,11,0.2))',   ring:'var(--red)',    statusClass:'high' },
-    { init:'XG', name:'Xiao Gang', status:'Resting',   emoji:'💪', bg:'linear-gradient(135deg,rgba(65,120,255,0.25),rgba(168,85,247,0.2))', ring:'var(--brand)', statusClass:'rest' },
-  ]
 
   return (
     <>
       <div className="amb amb-1" /><div className="amb amb-2" /><div className="amb amb-3" />
-
 
       <div className={`app-shell ${zone.bg}`} style={{ position:'relative', zIndex:1, height:'100vh', overflow:'hidden' }}>
 
         {/* ── Header ── */}
         <div className="train-hbar">
           <div className="train-hbar-top">
-            <span className="fs11 t-m">In Session</span>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <div style={{ textAlign:'right', lineHeight:1 }}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:26, fontWeight:700, color:'var(--lime)', letterSpacing:'-.02em' }}>
-                  {fmtMin(elapsed)}
-                </div>
-                <div style={{ fontSize:9, color:'var(--mu)', marginTop:2, letterSpacing:'.06em', textTransform:'uppercase' }}>elapsed</div>
+            <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+              <button className="theme-toggle-btn" style={{ width:28, height:28, fontSize:13 }} onClick={toggle} title="Toggle theme">
+                {theme === 'dark' ? '☀' : '☾'}
+              </button>
+              <span className="fs11 t-m">In Session</span>
+            </div>
+            <div style={{ textAlign:'right', lineHeight:1 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:26, fontWeight:700, color:'var(--lime)', letterSpacing:'-.02em' }}>
+                {fmtMin(elapsed)}
               </div>
-              <button className="train-close-btn" onClick={handleEndSession}>End</button>
+              <div style={{ fontSize:9, color:'var(--mu)', marginTop:2, letterSpacing:'.06em', textTransform:'uppercase' }}>elapsed</div>
             </div>
           </div>
           <div style={{ fontSize:15, fontWeight:700, color:'var(--tx)', margin:'5px 0 2px' }}>{ex.name}</div>
@@ -211,8 +179,8 @@ export default function TrainingPage() {
           </div>
         </div>
 
-        {/* ── Scrollable content ── */}
-        <div className="content" style={{ gap:10, paddingTop:8, paddingBottom:8 }}>
+        {/* ── Fixed top section: HR card + breathing hint ── */}
+        <div style={{ flexShrink:0, display:'flex', flexDirection:'column', gap:10, padding:'8px 14px 6px' }}>
 
           {/* HR + sets card */}
           <div className="card" style={{ padding:'10px 12px' }}>
@@ -346,170 +314,70 @@ export default function TrainingPage() {
             Breathing: {zone.hint}
           </div>
 
-          {/* Exercise demo — left: gif/image, right: info */}
-          <div className="card" style={{ padding:'10px 12px' }}>
-            <div className="row-between" style={{ marginBottom:8 }}>
-              <div className="sec-lbl" style={{ marginBottom:0 }}>Exercise Demo</div>
-              <span className="t-b fs11" style={{ cursor:'pointer' }} onClick={() => navigate('/exercise')}>Switch ↗</span>
-            </div>
-            <div style={{ display:'flex', gap:11, alignItems:'stretch' }}>
-
-              {/* Left: demo gif/image */}
-              <div style={{ flexShrink:0, width:120, borderRadius:10, overflow:'hidden', background:'linear-gradient(145deg,var(--brand-t),var(--teal-t))', display:'grid', placeItems:'center' }}>
-                {demoUrl
-                  ? <img src={demoUrl} alt={ex.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                  : <span style={{ fontSize:44 }}>{ex.icon}</span>
-                }
-              </div>
-
-              {/* Right: title + subtitle info */}
-              <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:5 }}>
-                <div style={{ fontSize:15, fontWeight:700, color:'var(--tx)', lineHeight:1.2 }}>
-                  {ex.name}
-                </div>
-                <div style={{ fontSize:11, color:'var(--mu)' }}>
-                  {ex.muscle} · {ex.equipment}
-                </div>
-                <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginTop:1 }}>
-                  <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'var(--brand-t)', color:'var(--brand)', border:'1px solid rgba(65,120,255,0.25)' }}>
-                    {ex.mechanics}
-                  </span>
-                  <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'var(--lime-t)', color:'var(--lime)', border:'1px solid rgba(200,240,60,0.25)' }}>
-                    {ex.level}
-                  </span>
-                </div>
-                <div style={{ fontSize:10, fontWeight:700, color:'var(--tx)', marginTop:2 }}>
-                  {ex.sets} sets · {ex.reps} reps
-                </div>
-                {ex.instructions && (
-                  <div className="clamp-3" style={{ fontSize:10, color:'var(--mu)', lineHeight:1.5, marginTop:1 }}>
-                    {ex.instructions}
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
-
         </div>
 
-        {/* ── Bottom panel: chat + send + buddies + end ── */}
-        <div style={{ flexShrink:0, borderTop:'1px solid var(--bd)', background:'var(--s0)', padding:'7px 12px 0' }}>
-
-          {/* Receive messages */}
-          {chatMsgs.length > 0 && (
-            <div style={{ maxHeight:92, overflowY:'auto', display:'flex', flexDirection:'column', gap:6, marginBottom:6 }}>
-              {chatMsgs.map(msg => (
-                <div key={msg.id} style={{ display:'flex', alignItems:'flex-end', gap:5, flexDirection: msg.isSelf ? 'row' : 'row-reverse' }}>
-                  <div
-                    className={`avatar av-sm${msg.isCoach ? ' av-coach' : ''}`}
-                    style={msg.isSelf ? { background:'var(--brand)', color:'#fff', flexShrink:0 } : { flexShrink:0 }}
-                  >{msg.initials}</div>
-                  <div style={{
-                    maxWidth:190, padding:'4px 9px',
-                    background: msg.isSelf ? 'var(--brand)' : msg.isCoach ? 'rgba(65,120,255,0.13)' : 'var(--s2)',
-                    border: `1px solid ${msg.isSelf ? 'transparent' : msg.isCoach ? 'rgba(65,120,255,0.3)' : 'var(--bd)'}`,
-                    borderRadius: msg.isSelf ? '10px 10px 10px 2px' : '10px 10px 2px 10px',
-                  }}>
-                    <div style={{ fontSize:8, fontWeight:700, marginBottom:1, color: msg.isSelf ? 'rgba(255,255,255,0.7)' : msg.isCoach ? 'var(--brand)' : 'var(--lime)' }}>{msg.name}</div>
-                    <div style={{ fontSize:11, color: msg.isSelf ? '#fff' : 'var(--tx)', lineHeight:1.35 }}>
-                      {msg.textEn}{msg.textZh && msg.textZh !== msg.textEn ? <span style={{ color: msg.isSelf ? 'rgba(255,255,255,0.65)' : 'var(--mu)', fontSize:10 }}> · {msg.textZh}</span> : null}
-                    </div>
+        {/* ── Scrollable demo cards only ── */}
+        <div style={{ flex:1, overflowY:'auto', padding:'4px 14px', paddingBottom:84, display:'flex', flexDirection:'column', gap:10, background:'transparent' }}>
+          {exerciseQueue.map((raw, idx) => {
+            const item  = resolveEx(raw)
+            const url   = demoUrls[raw?.id] ?? null
+            const isCur = idx === exIndex
+            return (
+              <div
+                key={idx}
+                className="card"
+                style={{ padding:'10px 12px', border: isCur ? '1px solid var(--lime)' : undefined }}
+                onClick={() => handleQueueSwitch(idx)}
+              >
+                <div className="row-between" style={{ marginBottom:8 }}>
+                  <div className="sec-lbl" style={{ marginBottom:0, color: isCur ? 'var(--lime)' : undefined }}>
+                    {isCur ? '▶ Current' : `Exercise #${idx + 1}`}
                   </div>
                 </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
-          )}
-
-          {/* Compact send */}
-          <div style={{ marginBottom:6 }}>
-            <div style={{ display:'flex', gap:4, marginBottom:5 }}>
-              {(['HELP','HOW','HI'] as MsgTab[]).map(t => (
-                <button key={t} onClick={() => { setMsgTab(t); setArmedMsg(null) }} style={{
-                  padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer',
-                  background: msgTab === t ? 'var(--brand-t)' : 'transparent',
-                  border: `1px solid ${msgTab === t ? 'var(--brand)' : 'var(--bd)'}`,
-                  color:   msgTab === t ? 'var(--brand)' : 'var(--mu)',
-                  fontWeight:700,
-                }}>{GYM_TAB_ICON[t]}</button>
-              ))}
-              {armedMsg && (
-                <span style={{ marginLeft:'auto', fontSize:9, color:'var(--mu)', alignSelf:'center' }}>
-                  {targetBuddy ? `→ ${targetBuddy}` : 'tap a buddy →'}
-                </span>
-              )}
-            </div>
-            <div style={{ display:'flex', gap:5, overflowX:'auto', paddingBottom:2 }}>
-              {getMsgList(msgTab).map((m, i) => {
-                const active = armedMsg?.en === m.en
-                const isHi   = msgTab === 'HI'
-                return (
-                  <button key={i} onClick={() => setArmedMsg(active ? null : m)} style={{
-                    flexShrink:0, padding: isHi ? '4px 8px' : '3px 9px',
-                    fontSize: isHi ? 15 : 10, borderRadius:12, cursor:'pointer', whiteSpace:'nowrap',
-                    background: active ? 'var(--brand)' : 'var(--s1)',
-                    border: `1px solid ${active ? 'var(--brand)' : 'var(--bd)'}`,
-                    color: active ? '#fff' : 'var(--tx)',
-                    display:'flex', flexDirection: isHi ? 'row' : 'column', alignItems:'center', gap:1,
-                  }}>
-                    {isHi ? <span>{m.en} <span style={{ fontSize:9 }}>{m.zh}</span></span>
-                          : <><span>{m.en}</span><span style={{ fontSize:8, opacity: active ? 0.8 : 0.5 }}>{m.zh}</span></>}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Buddies row + Map link */}
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:7 }}>
-            <div className="buddy-strip" style={{ flex:1, gap:6 }}>
-              {buddies.map(b => (
-                <div
-                  key={b.init}
-                  className="buddy-chip"
-                  style={{
-                    width:64, padding:'5px 4px',
-                    borderColor: targetBuddy === b.name ? 'var(--brand)' : undefined,
-                    cursor:'pointer',
-                  }}
-                  onClick={() => {
-                    if (armedMsg) {
-                      const selfInit = profile ? (profile.username ?? 'ME').slice(0,2).toUpperCase() : 'ME'
-                      setChatMsgs(prev => [...prev, {
-                        id: chatIdRef.current++, name:'You', initials:selfInit,
-                        textEn:armedMsg.en, textZh:armedMsg.zh, isCoach:false, isSelf:true,
-                      }])
-                      setArmedMsg(null)
-                      setTargetBuddy(null)
-                    } else {
-                      setTargetBuddy(t => t === b.name ? null : b.name)
+                <div style={{ display:'flex', gap:11, alignItems:'stretch' }}>
+                  <div style={{ flexShrink:0, width:120, borderRadius:10, overflow:'hidden', background:'linear-gradient(145deg,var(--brand-t),var(--teal-t))', display:'grid', placeItems:'center' }}>
+                    {url
+                      ? <img src={url} alt={item.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      : <span style={{ fontSize:44 }}>{item.icon}</span>
                     }
-                  }}
-                >
-                  <div className="avatar-wrap">
-                    <div className="online-ring" style={{ borderColor:b.ring }} />
-                    <div className="avatar av-sm" style={{ background:b.bg }}>{b.init}</div>
                   </div>
-                  <div className="buddy-chip-name" style={{ fontSize:9 }}>{b.name}</div>
-                  <div className={`buddy-chip-status${(b as any).statusClass ? ' '+(b as any).statusClass : ''}`} style={{ fontSize:8 }}>{b.status}</div>
+                  <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:5 }}>
+                    <div style={{ fontSize:15, fontWeight:700, color: isCur ? 'var(--lime)' : 'var(--tx)', lineHeight:1.2 }}>
+                      {item.name}
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--mu)' }}>
+                      {item.muscle} · {item.equipment}
+                    </div>
+                    <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginTop:1 }}>
+                      <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'var(--brand-t)', color:'var(--brand)', border:'1px solid rgba(65,120,255,0.25)' }}>
+                        {item.mechanics}
+                      </span>
+                      <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'var(--lime-t)', color:'var(--lime)', border:'1px solid rgba(200,240,60,0.25)' }}>
+                        {item.level}
+                      </span>
+                    </div>
+                    <div style={{ fontSize:10, fontWeight:700, color:'var(--tx)', marginTop:2 }}>
+                      {item.sets} sets · {item.reps} reps
+                    </div>
+                    {item.instructions && (
+                      <div className="clamp-3" style={{ fontSize:10, color:'var(--mu)', lineHeight:1.5, marginTop:1 }}>
+                        {item.instructions}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-            <span
-              className="t-b fs11"
-              style={{ cursor:'pointer', flexShrink:0 }}
-              onClick={() => navigate('/buddies', { state:{ fromSession:true } })}
-            >Map →</span>
-          </div>
+              </div>
+            )
+          })}
+        </div>
 
-          {/* End session */}
-          <div style={{ paddingBottom:16 }}>
-            <button className="btn-danger" onClick={handleEndSession} style={{ padding:12, fontSize:14, letterSpacing:'.05em', width:'100%' }}>
+        {/* ── Fixed END SESSION bar ── */}
+        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:100, background:'var(--s0)', borderTop:'1px solid var(--bd)' }}>
+          <div style={{ maxWidth:430, margin:'0 auto', padding:'10px 16px 20px' }}>
+            <button className="btn-danger" onClick={handleEndSession} style={{ display:'block', width:'100%', padding:12, fontSize:14, letterSpacing:'.05em' }}>
               END SESSION
             </button>
           </div>
-
         </div>
 
       </div>

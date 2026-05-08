@@ -11,13 +11,13 @@ interface Props {
 const VW = 400
 const VH = 240
 
-// Equipment counts match STATIC_COUNTS: cardio:4, free_weight:5 (barbell+4 dumbbells), machine:3, stretching:2
-const TREADMILL_X = [18, 80, 142, 204]
-const MACHINE_X   = [237, 291, 345]
-const MAT_X       = [100, 264]
+// Equipment drawn matches capacity: cardio 6, free_weight 1 barbell+5 dumbbells=6, machine 6, stretching 4
+const TREADMILL_X = [21, 84, 147, 210, 273, 336]
+const MACHINE_X   = [214, 245, 276, 307, 338, 369]
+const MAT_X       = [57, 142, 227, 312]
 const DUMBBELLS: [number, number][] = [
-  [110, 100], [148, 100],
-  [110, 126], [148, 126],
+  [113, 97], [140, 97], [167, 97],
+  [127, 121], [154, 121],
 ]
 
 const ZONE_DEFS = [
@@ -144,7 +144,7 @@ export function GymFloorPlan({ zoneCounts, activeZone, onZoneClick }: Props) {
         ))}
       </g>
 
-      <text x={200} y={68} textAnchor="middle" fill={c.sublabel} fontSize={7} fontWeight="700" letterSpacing="2" style={{ pointerEvents:'none' }}>CARDIO · Treadmills · Ellipticals</text>
+      <text x={200} y={68} textAnchor="middle" fill={c.sublabel} fontSize={9} fontWeight="700" letterSpacing="1.5" style={{ pointerEvents:'none' }}>CARDIO · Treadmills · Ellipticals</text>
       <CountBadge zone={ZONE_DEFS[0]} counts={zoneCounts?.['cardio']} c={c} />
 
       {/* Free Weights: 1 barbell + 4 dumbbells = 5 */}
@@ -175,7 +175,7 @@ export function GymFloorPlan({ zoneCounts, activeZone, onZoneClick }: Props) {
           </g>
         ))}
       </g>
-      <text x={302} y={152} textAnchor="middle" fill={c.sublabel} fontSize={7} fontWeight="700" letterSpacing="1.5" style={{ pointerEvents:'none' }}>MACHINES</text>
+      <text x={302} y={152} textAnchor="middle" fill={c.sublabel} fontSize={9} fontWeight="700" letterSpacing="1.5" style={{ pointerEvents:'none' }}>MACHINES</text>
       <CountBadge zone={ZONE_DEFS[2]} counts={zoneCounts?.['machine']} c={c} />
 
       {/* Stretching: 2 mats */}

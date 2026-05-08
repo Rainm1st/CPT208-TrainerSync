@@ -104,21 +104,7 @@ export default function TraineePage() {
     .filter(s => s.started_at >= oneWeekAgo)
     .reduce((sum, s) => sum + Math.round((s.duration_s ?? 0) / 60), 0)
 
-  const buddies = presences.filter(p => p.trainee_id !== profile?.id).slice(0, 6)
 
-  const STATIC_BUDDIES = [
-    { init:'XM', name:'Xiao Ming', status:'Bench Press', ring:'var(--z-green)', tint:'34,197,94',  live:true  },
-    { init:'XH', name:'Xiao Hong', status:'High HR',     ring:'var(--z-red)',   tint:'239,68,68',  live:true  },
-    { init:'XG', name:'Xiao Gang', status:'Resting',     ring:'var(--brand)',   tint:'65,120,255', live:false },
-    { init:'XL', name:'Xiao Li',   status:'Treadmill',   ring:'var(--z-green)', tint:'34,197,94',  live:true  },
-  ]
-
-  function buddyRing(hr: number) {
-    return hr > 150 ? 'var(--z-red)' : hr > 110 ? 'var(--z-green)' : 'var(--brand)'
-  }
-  function buddyTint(hr: number) {
-    return hr > 150 ? '239,68,68' : hr > 110 ? '34,197,94' : '65,120,255'
-  }
 
   function cycleTip() {
     setTipIdx(i => { let n = rand(TIPS.length - 1); if (n >= i) n++; return n })
@@ -184,8 +170,8 @@ export default function TraineePage() {
                 <div className="stat-unit">min today</div>
               </div>
               <div className="stat-col">
-                <div className="stat-val lime">{display[0]?.avg_hr ?? '—'}</div>
-                <div className="stat-unit">avg bpm</div>
+                <div className="stat-val lime">{display[0]?.duration_s ? Math.round(display[0].duration_s / 60 * 6) : '—'}</div>
+                <div className="stat-unit">calories</div>
               </div>
               <div className="stat-col">
                 <div className="stat-val">{display[0]?.sets_done ?? '—'}</div>
@@ -268,64 +254,6 @@ export default function TraineePage() {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-
-          {/* ── Recent Connections ── */}
-          <div>
-            <div className="row-between" style={{ marginBottom:8 }}>
-              <div className="sec-lbl" style={{ marginBottom:0, fontSize:13 }}>
-                Recent Connections{buddies.length > 0 && <span style={{ color:'var(--lime)', fontWeight:700, marginLeft:5 }}>{buddies.length}</span>}
-              </div>
-              <span style={{ fontSize:13, fontWeight:700, color:'var(--brand)', cursor:'pointer' }} onClick={() => navigate('/buddies')}>Map →</span>
-            </div>
-            <div style={{ display:'flex', gap:7, overflowX:'auto', paddingBottom:4 }}>
-              {(buddies.length > 0 ? buddies.map(p => {
-                const init = (p.profiles?.username ?? p.trainee_id).slice(0,2).toUpperCase()
-                const name = p.profiles?.username ?? init
-                const hr   = p.current_hr
-                const ring = buddyRing(hr)
-                const tint = buddyTint(hr)
-                const statusCls = hr > 150 ? 'high' : hr < 100 ? 'rest' : ''
-                return {
-                  init, name, status: p.exercise_name ?? 'Active',
-                  ring, tint, live:true, statusCls,
-                  onClick: () => navigate('/buddy/' + p.trainee_id),
-                }
-              }) : STATIC_BUDDIES.map(b => ({
-                ...b, statusCls: b.ring === 'var(--z-red)' ? 'high' : !b.live ? 'rest' : '',
-                onClick: () => navigate('/buddies'),
-              }))).map((b, i) => (
-                <div
-                  key={i}
-                  onClick={b.onClick}
-                  style={{
-                    flexShrink:0, width:66, borderRadius:11, padding:'7px 4px 6px',
-                    background:'var(--s1)',
-                    border:'1px solid var(--bd)',
-                    cursor:'pointer',
-                    display:'flex', flexDirection:'column', alignItems:'center', gap:2,
-                    textAlign:'center',
-                  }}
-                >
-                  <div className="avatar-wrap">
-                    <div className="avatar av-sm">{b.init}</div>
-                    {b.live && <div className="online-ring" style={{ borderColor:b.ring }} />}
-                  </div>
-                  <div style={{ fontSize:10, fontWeight:700, color:'var(--tx)' }}>{b.name}</div>
-                  <div
-                    className={`buddy-chip-status${b.statusCls ? ' '+b.statusCls : ''}`}
-                    style={{ fontSize:8, maxWidth:70, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}
-                  >{b.status}</div>
-                  {b.live && (
-                    <div style={{
-                      width:5, height:5, borderRadius:'50%',
-                      background:`rgba(${b.tint},0.9)`,
-                      boxShadow:`0 0 5px rgba(${b.tint},0.7)`,
-                    }} />
-                  )}
-                </div>
-              ))}
             </div>
           </div>
 
