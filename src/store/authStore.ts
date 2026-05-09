@@ -26,19 +26,21 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   init: () => {
     // Load session + profile on first mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      set({ session })
-      if (session) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        set({ profile: data as Profile | null, loading: false })
-      } else {
-        set({ loading: false })
-      }
-    })
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        set({ session })
+        if (session) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          set({ profile: data as Profile | null, loading: false })
+        } else {
+          set({ loading: false })
+        }
+      })
+      .catch(() => set({ loading: false }))
 
     // Keep session in sync with Supabase auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

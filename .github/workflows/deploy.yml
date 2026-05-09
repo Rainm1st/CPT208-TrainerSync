@@ -27,6 +27,8 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: true
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - name: Debug dist contents
         run: ls -la dist/ && ls -la dist/assets/
       - name: Add 404.html for SPA fallback
