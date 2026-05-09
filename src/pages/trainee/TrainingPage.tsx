@@ -67,14 +67,15 @@ export default function TrainingPage() {
   const { upsert: upsertPresence, clear: clearPresence } = usePresenceStore()
 
   const sessionIdRef = useRef<string | null>(null)
-  const hrRef        = useRef(142)
+  const hrRef        = useRef(110)
+  const warmupRef    = useRef(6)  // first 6 ticks ramp up fast
   const setRef       = useRef(0)
   const elapsedRef   = useRef(0)
   const samplesRef   = useRef<number[]>([])
   const setCountsRef = useRef<Record<string, number>>({})
 
   const [exIndex, setExIndex]       = useState(0)
-  const [hr, setHr]                 = useState(142)
+  const [hr, setHr]                 = useState(110)
   const [elapsed, setElapsed]       = useState(0)
   const [currentSet, setCurrentSet] = useState(0)
   const [setLog, setSetLog]         = useState<SetRecord[]>([])
@@ -97,7 +98,14 @@ export default function TrainingPage() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      const next = Math.max(95, Math.min(175, hrRef.current + Math.floor((Math.random() - 0.38) * 7)))
+      let next: number
+      if (warmupRef.current > 0) {
+        // Ramp from 110 → ~140 quickly during warmup ticks
+        warmupRef.current--
+        next = Math.min(145, hrRef.current + Math.floor(Math.random() * 6 + 4))
+      } else {
+        next = Math.max(95, Math.min(175, hrRef.current + Math.floor((Math.random() - 0.38) * 7)))
+      }
       hrRef.current = next
       samplesRef.current.push(next)
       setHr(next)

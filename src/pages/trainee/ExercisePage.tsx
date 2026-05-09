@@ -185,8 +185,8 @@ export default function ExercisePage() {
             ))}
           </div>
 
-          {/* Equipment chips */}
-          <div style={{ display: 'flex', gap: 4 }}>
+          {/* Equipment chips + count */}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             {EQUIP_CATS.map(o => (
               <button
                 key={o}
@@ -203,6 +203,9 @@ export default function ExercisePage() {
                 {EQUIP_LABEL[o]}
               </button>
             ))}
+            <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--mu)', fontWeight: 600, flexShrink: 0 }}>
+              {filtered.length}/{data.exercises.length} exercises
+            </span>
           </div>
         </div>
 

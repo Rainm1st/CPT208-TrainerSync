@@ -52,12 +52,12 @@ export default function FriendsPage() {
               {requests.length === 0 ? (
                 <div className="t-m fs11" style={{ textAlign:'center' }}>No pending requests</div>
               ) : requests.map(r => (
-                <div key={r.id} className="list-item">
-                  <div className="row" style={{ marginBottom:8 }}>
-                    <div className="avatar av-md">{(r.requester.username ?? 'U').slice(0,2).toUpperCase()}</div>
+                <div key={r.id} className="list-item" style={{ padding:'14px 14px' }}>
+                  <div className="row" style={{ marginBottom:10, gap:12 }}>
+                    <div className="avatar av-lg">{(r.requester.username ?? 'U').slice(0,2).toUpperCase()}</div>
                     <div>
-                      <div className="fs13 fw6">{r.requester.username}</div>
-                      <div className="fs11 t-m">Wants to be your friend</div>
+                      <div style={{ fontSize:15, fontWeight:700 }}>{r.requester.username}</div>
+                      <div className="fs12 t-m">Wants to be your friend</div>
                     </div>
                   </div>
                   <div className="btn-row">
@@ -88,13 +88,13 @@ export default function FriendsPage() {
               {friends.length === 0 ? (
                 <div className="t-m fs11" style={{ textAlign:'center' }}>No friends yet — find people in the Buddies tab</div>
               ) : friends.map(f => (
-                <div key={f.friendship_id} className="list-item">
-                  <div className="row-between" style={{ marginBottom:8 }}>
-                    <div className="row">
-                      <div className="avatar av-md">{(f.username ?? 'U').slice(0,2).toUpperCase()}</div>
+                <div key={f.friendship_id} className="list-item" style={{ padding:'14px 14px' }}>
+                  <div className="row-between" style={{ marginBottom:10 }}>
+                    <div className="row" style={{ gap:12 }}>
+                      <div className="avatar av-lg">{(f.username ?? 'U').slice(0,2).toUpperCase()}</div>
                       <div>
-                        <div className="fs13 fw6">{f.username}</div>
-                        <div className="fs11 t-g">Friend</div>
+                        <div style={{ fontSize:15, fontWeight:700 }}>{f.username}</div>
+                        <div className="fs12 t-g">Friend</div>
                       </div>
                     </div>
                   </div>
