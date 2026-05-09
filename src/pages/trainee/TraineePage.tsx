@@ -6,12 +6,6 @@ import { usePresenceStore } from '../../store/presenceStore'
 import { BottomNav } from '../../components/BottomNav'
 import { useTheme } from '../../hooks/useTheme'
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' })
-}
-function fmtDuration(s: number | null) {
-  return s ? `${Math.round(s / 60)} min` : '—'
-}
 function timeGreeting() {
   const h = new Date().getHours()
   if (h < 12) return 'Good morning'
@@ -82,7 +76,7 @@ const NEXTS = [
 export default function TraineePage() {
   const { profile }  = useAuthStore()
   const { recentSessions, fetchRecent } = useSessionStore()
-  const { presences, fetchAll, subscribe } = usePresenceStore()
+  const { fetchAll, subscribe } = usePresenceStore()
   const navigate = useNavigate()
   const { theme, toggle } = useTheme()
 
@@ -112,8 +106,6 @@ export default function TraineePage() {
   function cycleNext() {
     setNextIdx(i => { let n = rand(NEXTS.length - 1); if (n >= i) n++; return n })
   }
-
-  const buddyCardEnd = theme === 'light' ? 'rgba(239,232,223,0.75)' : 'rgba(15,30,53,0.55)'
 
   return (
     <>
