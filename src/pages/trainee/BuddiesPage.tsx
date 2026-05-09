@@ -5,7 +5,7 @@ import { usePresenceStore } from '../../store/presenceStore'
 import { BottomNav } from '../../components/BottomNav'
 import { GymFloorPlan } from '../../components/GymFloorPlan'
 import type { ZoneCount } from '../../components/GymFloorPlan'
-import { type BiMsg, type MsgTab, GYM_TAB_LABEL, getMsgList } from '../../lib/gymMessages'
+import { type BiMsg, type MsgTab, getMsgList } from '../../lib/gymMessages'
 import { useTheme } from '../../hooks/useTheme'
 
 // Capacity = number of equipment drawn in the SVG floor plan

@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { useTheme } from '../hooks/useTheme'
 
-import { useTheme } from '../hooks/useTheme'
-
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
