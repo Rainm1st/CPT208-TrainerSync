@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
+
   <head>
     <script>
       if (['localhost', '127.0.0.1'].includes(location.hostname)) {
@@ -16,7 +17,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>TrainerSync</title>
 
-    <!-- Theme -->
+
+    <!-- Theme: apply before paint to avoid flash -->
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark')</script>
+
     <meta name="theme-color" content="#060d1b" />
 
     <!-- Fonts -->
@@ -30,10 +34,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TrainerSync" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <script type="module" crossorigin src="/assets/index-UI2GOrwc.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DJG4Tnm5.css">
-  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+    <script type="module" crossorigin src="/CPT208-TrainerSync/assets/index-CwO5FVoI.js"></script>
+    <link rel="stylesheet" crossorigin href="/CPT208-TrainerSync/assets/index-Dsq-OPW6.css">
+  <link rel="manifest" href="/CPT208-TrainerSync/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/CPT208-TrainerSync/registerSW.js"></script></head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
 </html>
