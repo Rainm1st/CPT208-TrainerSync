@@ -1,3 +1,4 @@
+
 import { useTheme } from '../hooks/useTheme'
 
 export interface ZoneCount { current: number; capacity: number }
@@ -189,6 +190,7 @@ export function GymFloorPlan({ zoneCounts, activeZone, onZoneClick }: Props) {
 
       {/* Entrance */}
       <path d="M182,237 L200,229 L218,237" fill={c.entrance} style={{ pointerEvents:'none' }} />
+
     </svg>
   )
 }

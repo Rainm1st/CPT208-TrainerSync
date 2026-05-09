@@ -8,9 +8,11 @@ dist-ssr
 dev-dist
 
 # Local env (never commit real credentials)
+
 .env
 .env.local
 .env.*.local
+
 
 # TypeScript
 *.tsbuildinfo
