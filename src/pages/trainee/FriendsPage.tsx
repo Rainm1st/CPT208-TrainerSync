@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useSocialStore } from '../../store/socialStore'
+import { useTheme } from '../../hooks/useTheme'
 
 export default function FriendsPage() {
   const navigate = useNavigate()
+  const { theme, toggle } = useTheme()
   const { profile } = useAuthStore()
   const { friends, requests, fetchFriends, fetchRequests, acceptRequest, declineRequest, sendInteraction } = useSocialStore()
 
@@ -34,7 +36,12 @@ export default function FriendsPage() {
         <div className="hbar">
           <button className="hbar-back" onClick={() => navigate('/buddies')}>← Back</button>
           <span className="hbar-ttl">Friends</span>
-          <span className="hbar-icon" style={{ fontSize:16 }}>🔍</span>
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <button className="theme-toggle-btn" style={{ width:28, height:28, fontSize:13 }} onClick={toggle} title="Toggle theme">
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
+            <span className="hbar-icon" style={{ fontSize:16 }}>🔍</span>
+          </div>
         </div>
         <div className="content">
 
