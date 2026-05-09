@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <!doctype html>
 <html lang="en">
 <head>
@@ -15,6 +16,29 @@
 <div class="amb amb-1"></div>
 <div class="amb amb-2"></div>
 <div class="amb amb-3"></div>
+=======
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <script>
+      if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            Promise.all(registrations.map((registration) => registration.unregister())).then(() => {
+              if (window.caches) caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+            })
+          })
+        }
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>TrainerSync</title>
+
+    <!-- Theme: apply before paint to avoid flash -->
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark')</script>
+    <meta name="theme-color" content="#060d1b" />
+>>>>>>> Stashed changes
 
 <!-- ══════════════════════════════════════════════════════════
      SHELL
