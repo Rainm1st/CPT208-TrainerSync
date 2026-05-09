@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
+  base: process.env.GITHUB_PAGES ? '/CPT208-TrainerSync/' : '/',
   server: {
     port: 5209,
     strictPort: true,

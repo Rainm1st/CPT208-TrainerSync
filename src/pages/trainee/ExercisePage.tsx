@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { BottomNav } from '../../components/BottomNav'
 import { useTheme } from '../../hooks/useTheme'
 
+const BASE = import.meta.env.BASE_URL
+function assetUrl(path: string): string {
+  return BASE + path.replace(/^\//, '')
+}
+
 interface EquipEntry {
   id: string
   name: string
@@ -35,19 +40,19 @@ interface ExerciseData {
   muscles: MuscleEntry[]
 }
 
-const EXERCISE_DATA_URL = '/assets/exercise-data.json'
+const EXERCISE_DATA_URL = assetUrl('assets/exercise-data.json')
 
 function getGif(ex: ExEntry, equipMap: Map<string, EquipEntry>): string | null {
   for (const eqId of ex.equipment_ids) {
     const gif = equipMap.get(eqId)?.ex_gif_paths[ex.id]
-    if (gif) return gif
+    if (gif) return assetUrl(gif)
   }
   return null
 }
 function getImg(ex: ExEntry, equipMap: Map<string, EquipEntry>): string | null {
   for (const eqId of ex.equipment_ids) {
     const img = equipMap.get(eqId)?.ex_paths[ex.id]
-    if (img) return img
+    if (img) return assetUrl(img)
   }
   return null
 }

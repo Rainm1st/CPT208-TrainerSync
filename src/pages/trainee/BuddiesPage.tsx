@@ -5,9 +5,10 @@ import { usePresenceStore } from '../../store/presenceStore'
 import { BottomNav } from '../../components/BottomNav'
 import { GymFloorPlan } from '../../components/GymFloorPlan'
 import type { ZoneCount } from '../../components/GymFloorPlan'
-import { type BiMsg, type MsgTab, getMsgList } from '../../lib/gymMessages'
+import { type BiMsg, type MsgTab, GYM_TAB_LABEL, getMsgList } from '../../lib/gymMessages'
 import { useTheme } from '../../hooks/useTheme'
 
+// Capacity = number of equipment drawn in the SVG floor plan
 const ZONE_CAPACITY = { cardio: 6, free_weight: 6, machine: 6, stretching: 4 }
 const ZONE_LABELS: Record<string, string> = {
   cardio: 'Cardio', free_weight: 'Free Weights', machine: 'Machines', stretching: 'Stretching',
@@ -34,6 +35,7 @@ interface DisplayBuddy {
   id: string; name: string; initials: string
   hr: number; exercise: string; zone: string; live: boolean; isAnon: boolean; isCoach: boolean
 }
+
 
 const STATIC_BUDDIES: DisplayBuddy[] = [
   { id:'xm', name:'Xiao Ming', initials:'XM', hr:135, exercise:'Bench Press',  zone:'free_weight', live:true,  isAnon:false, isCoach:false },
