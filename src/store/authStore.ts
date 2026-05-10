@@ -61,7 +61,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           if (!cancelled) set({ profile: profileData as Profile | null, loading: false })
         }
       })
-      .catch(() => { if (!cancelled) set({ loading: false }) })
+      .catch((err) => {
+        if (!cancelled) {
+          console.warn('[auto-login] unexpected error:', err instanceof Error ? err.message : err)
+          set({ loading: false })
+        }
+      })
 
     // Keep session in sync with Supabase auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

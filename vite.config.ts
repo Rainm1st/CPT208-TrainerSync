@@ -4,8 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 
+const base = process.env.GITHUB_PAGES ? '/CPT208-TrainerSync/' : '/'
+
 export default defineConfig({
-  base: process.env.GITHUB_PAGES ? '/CPT208-TrainerSync/' : '/',
+  base,
   server: {
     port: 5209,
     strictPort: true,
@@ -32,7 +34,7 @@ export default defineConfig({
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
-        start_url: '/',
+        start_url: base,
         icons: [
           { src: '/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' },
           { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' },
