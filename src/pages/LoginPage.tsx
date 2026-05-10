@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { useTheme } from '../hooks/useTheme'
+import { DEMO_EMAIL, DEMO_PASSWORD } from '../data/accounts'
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
@@ -67,7 +68,6 @@ export default function LoginPage() {
             <div className="login-logo-name">
               <span className="brand-primary">Trainer</span><span className="brand-lime">Sync</span>
             </div>
-            {/* hint text — smaller */}
             <div className="login-logo-sub" style={{ fontSize: 10 }}>Go Trainers · CPT208</div>
           </div>
 
@@ -98,7 +98,6 @@ export default function LoginPage() {
 
             {error && <p className="err-msg">{error}</p>}
 
-            {/* functional button — larger */}
             <button
               type="submit"
               className="btn-primary"
@@ -109,6 +108,13 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Demo account hint */}
+          <div style={{ textAlign: 'center', marginTop: -4 }}>
+            <span style={{ fontSize: 11, color: 'var(--mu)' }}>
+              Demo: <span style={{ fontFamily: 'monospace' }}>{DEMO_EMAIL}</span> / <span style={{ fontFamily: 'monospace' }}>{DEMO_PASSWORD}</span>
+            </span>
+          </div>
+
           <div className="divider-or">or</div>
 
           <div className="btn-row">
@@ -116,7 +122,6 @@ export default function LoginPage() {
             <button className="btn-ghost" type="button">G Google</button>
           </div>
 
-          {/* functional link bigger, hint link smaller */}
           <div style={{ display: 'flex', gap: 20, justifyContent: 'center', alignItems: 'center' }}>
             <Link
               to="/register"

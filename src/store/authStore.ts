@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
+import { DEMO_EMAIL, DEMO_PASSWORD } from '../data/accounts'
 import type { Session } from '@supabase/supabase-js'
 
 export interface Profile {
@@ -25,32 +26,56 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
 
   init: () => {
-    // Load session + profile on first mount
+    let cancelled = false
+
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
-        set({ session })
+        if (cancelled) return
         if (session) {
+          // Existing session — load profile
+          set({ session })
           const { data } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single()
-          set({ profile: data as Profile | null, loading: false })
+          if (!cancelled) set({ profile: data as Profile | null, loading: false })
         } else {
-          set({ loading: false })
+          // No session — auto-login with demo account
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: DEMO_EMAIL,
+            password: DEMO_PASSWORD,
+          })
+          if (cancelled) return
+          if (error || !data.session) {
+            console.warn('[auto-login] failed:', error?.message ?? 'no session')
+            set({ loading: false })
+            return
+          }
+          set({ session: data.session })
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single()
+          if (!cancelled) set({ profile: profileData as Profile | null, loading: false })
         }
       })
-      .catch(() => set({ loading: false }))
+      .catch(() => { if (!cancelled) set({ loading: false }) })
 
     // Keep session in sync with Supabase auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (cancelled) return
         set({ session })
         if (!session) set({ profile: null, loading: false })
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   },
 
   fetchProfile: async (userId: string) => {
