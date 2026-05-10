@@ -11,3 +11,13 @@ if (supabaseUrl && supabaseUrl.length > 20) {
 }
 
 export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '')
+
+// Validate connectivity: lightweight HEAD request to the REST API
+if (supabaseUrl) {
+  fetch(`${supabaseUrl}/rest/v1/`, {
+    method: 'HEAD',
+    headers: { apikey: supabaseAnonKey },
+  })
+    .then((res) => console.log(`[supabase] connection check: ${res.status} ${res.statusText}`))
+    .catch((err) => console.error('[supabase] connection failed:', err.message))
+}
