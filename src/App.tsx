@@ -7,7 +7,6 @@ import LoginPage         from './pages/LoginPage'
 import RegisterPage      from './pages/RegisterPage'
 import SetupProfilePage  from './pages/SetupProfilePage'
 
-// Trainee pages
 import TraineePage       from './pages/trainee/TraineePage'
 import ExercisePage      from './pages/trainee/ExercisePage'
 import TrainingPage      from './pages/trainee/TrainingPage'
@@ -19,26 +18,9 @@ import EmojiPreviewPage  from './pages/trainee/EmojiPreviewPage'
 import FriendsPage       from './pages/trainee/FriendsPage'
 import ProfilePage       from './pages/trainee/ProfilePage'
 
-// Coach pages
-import CoachPage         from './pages/coach/CoachPage'
-import MenteesPage       from './pages/coach/MenteesPage'
-import MenteeDetailPage  from './pages/coach/MenteeDetailPage'
-import CoachMessagesPage  from './pages/coach/CoachMessagesPage'
-import CoachChatPage      from './pages/coach/CoachChatPage'
-import CoachSettingsPage  from './pages/coach/CoachSettingsPage'
-
-function RoleHome() {
-  const { profile } = useAuthStore()
-  return <Navigate to={profile!.role === 'coach' ? '/coach' : '/map'} replace />
-}
-
 function AppRoutes() {
   const { init } = useAuthStore()
   useEffect(() => { return init() }, [init])
-
-  const T = (role?: 'trainee' | 'coach') =>
-    (el: React.ReactElement) =>
-      <ProtectedRoute requireRole={role}>{el}</ProtectedRoute>
 
   return (
     <Routes>
@@ -48,27 +30,19 @@ function AppRoutes() {
       <Route path="/setup"    element={<SetupProfilePage />} />
 
       {/* Trainee */}
-      <Route path="/map"           element={T('trainee')(<TraineePage />)} />
-      <Route path="/exercise"      element={T('trainee')(<ExercisePage />)} />
-      <Route path="/train"         element={T('trainee')(<TrainingPage />)} />
-      <Route path="/summary"       element={T('trainee')(<SummaryPage />)} />
-      <Route path="/buddies"       element={T('trainee')(<BuddiesPage />)} />
-      <Route path="/buddy/:id"     element={T('trainee')(<BuddyProfilePage />)} />
-      <Route path="/cheer-preview" element={T('trainee')(<CheerPreviewPage />)} />
-      <Route path="/emoji-preview" element={T('trainee')(<EmojiPreviewPage />)} />
-      <Route path="/friends"       element={T('trainee')(<FriendsPage />)} />
-      <Route path="/profile"       element={T('trainee')(<ProfilePage />)} />
+      <Route path="/map"           element={<ProtectedRoute><TraineePage /></ProtectedRoute>} />
+      <Route path="/exercise"      element={<ProtectedRoute><ExercisePage /></ProtectedRoute>} />
+      <Route path="/train"         element={<ProtectedRoute><TrainingPage /></ProtectedRoute>} />
+      <Route path="/summary"       element={<ProtectedRoute><SummaryPage /></ProtectedRoute>} />
+      <Route path="/buddies"       element={<ProtectedRoute><BuddiesPage /></ProtectedRoute>} />
+      <Route path="/buddy/:id"     element={<ProtectedRoute><BuddyProfilePage /></ProtectedRoute>} />
+      <Route path="/cheer-preview" element={<ProtectedRoute><CheerPreviewPage /></ProtectedRoute>} />
+      <Route path="/emoji-preview" element={<ProtectedRoute><EmojiPreviewPage /></ProtectedRoute>} />
+      <Route path="/friends"       element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
+      <Route path="/profile"       element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
-      {/* Coach */}
-      <Route path="/coach"              element={T('coach')(<CoachPage />)} />
-      <Route path="/mentees"            element={T('coach')(<MenteesPage />)} />
-      <Route path="/mentee/:id"         element={T('coach')(<MenteeDetailPage />)} />
-      <Route path="/coach/messages"     element={T('coach')(<CoachMessagesPage />)} />
-      <Route path="/coach/chat/:id"     element={T('coach')(<CoachChatPage />)} />
-      <Route path="/coach/settings"     element={T('coach')(<CoachSettingsPage />)} />
-
-      {/* Root → role home */}
-      <Route path="/" element={<ProtectedRoute><RoleHome /></ProtectedRoute>} />
+      {/* Root → map */}
+      <Route path="/" element={<ProtectedRoute><Navigate to="/map" replace /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -5,7 +5,6 @@ import { useAuthStore } from '../store/authStore'
 
 export default function SetupProfilePage() {
   const [username, setUsername] = useState('')
-  const [role, setRole]         = useState<'trainee' | 'coach' | ''>('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
   const { session, fetchProfile } = useAuthStore()
@@ -15,7 +14,6 @@ export default function SetupProfilePage() {
     e.preventDefault()
     setError('')
 
-    if (!role) { setError('Please choose your role'); return }
     if (!session) { navigate('/login', { replace: true }); return }
 
     setLoading(true)
@@ -23,7 +21,7 @@ export default function SetupProfilePage() {
     const { error: err } = await supabase.from('profiles').insert({
       id: session.user.id,
       username: username.trim(),
-      role,
+      role: 'trainee',
     })
 
     if (err) {
@@ -33,7 +31,7 @@ export default function SetupProfilePage() {
     }
 
     await fetchProfile(session.user.id)
-    navigate(role === 'coach' ? '/coach' : '/map', { replace: true })
+    navigate('/map', { replace: true })
     setLoading(false)
   }
 
@@ -49,7 +47,7 @@ export default function SetupProfilePage() {
           <div style={{ textAlign: 'center', marginBottom: 8 }}>
             <div className="login-logo-icon" style={{ margin: '0 auto 12px' }}>💪</div>
             <div className="login-logo-name">Set up your profile</div>
-            <div className="login-logo-sub">Just two quick things</div>
+            <div className="login-logo-sub">Choose a username to get started</div>
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -74,43 +72,13 @@ export default function SetupProfilePage() {
               <div className="label-sm" style={{ marginTop: 5 }}>Letters, numbers, underscores only</div>
             </div>
 
-            <div>
-              <div className="label-sm" style={{ marginBottom: 8 }}>I am a…</div>
-              <div className="btn-row">
-                {(['trainee', 'coach'] as const).map(r => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '20px 0',
-                      borderRadius: 14,
-                      border: `2px solid ${role === r ? 'var(--brand)' : 'var(--bd2)'}`,
-                      background: role === r ? 'var(--brand-t)' : 'transparent',
-                      color: role === r ? 'var(--tx)' : 'var(--mu)',
-                      transition: 'all .15s',
-                      minHeight: 0, minWidth: 0,
-                    }}
-                  >
-                    <span style={{ fontSize: 28 }}>{r === 'trainee' ? '🏃' : '💼'}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'capitalize' }}>{r}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {error && <p className="err-msg">{error}</p>}
 
             <button
               type="submit"
               className="btn-primary"
-              disabled={loading || !role}
-              style={{ opacity: (loading || !role) ? 0.4 : 1 }}
+              disabled={loading}
+              style={{ opacity: loading ? 0.4 : 1 }}
             >
               {loading ? 'Saving…' : 'Get Started'}
             </button>
