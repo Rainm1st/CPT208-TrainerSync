@@ -4,10 +4,9 @@ import { useAuthStore } from '../store/authStore'
 
 interface Props {
   children: ReactNode
-  requireRole?: 'trainee' | 'coach'
 }
 
-export function ProtectedRoute({ children, requireRole }: Props) {
+export function ProtectedRoute({ children }: Props) {
   const { session, profile, loading } = useAuthStore()
 
   if (loading) {
@@ -23,10 +22,6 @@ export function ProtectedRoute({ children, requireRole }: Props) {
 
   if (!session) return <Navigate to="/login" replace />
   if (!profile) return <Navigate to="/setup" replace />
-
-  if (requireRole && profile.role !== requireRole) {
-    return <Navigate to={profile.role === 'coach' ? '/coach' : '/map'} replace />
-  }
 
   return <>{children}</>
 }

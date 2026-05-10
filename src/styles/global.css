@@ -167,8 +167,6 @@ input { cursor: text; }
 .bnav-item .nav-ico { font-size: 20px; line-height:1; }
 .bnav-item .nav-lbl { font-size:9px; }
 .bnav-item.active { color: var(--lime); }
-.bnav-item.active.coach-nav { color: var(--coach); }
-.bnav-item.active.coach-nav::before { background:var(--coach); }
 .bnav-item:hover { color: var(--mu); }
 
 /* ══════════════════════════════════════════
@@ -216,20 +214,6 @@ input { cursor: text; }
   border:1px solid rgba(239,68,68,0.33); border-radius:12px; padding:11px 14px;
   font-size:13px; font-weight:600;
   background:rgba(239,68,68,0.13); color:#fca5a5; cursor:pointer; flex:1;
-  min-height:0; min-width:0;
-}
-.btn-coach-primary {
-  border:0; border-radius:12px; padding:12px 16px;
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:14px; font-weight:700;
-  background:linear-gradient(135deg,var(--coach),#7c3aed);
-  color:#fff; cursor:pointer; width:100%;
-  min-height:0; min-width:0;
-}
-.btn-coach {
-  border:1px solid rgba(168,85,247,0.33); border-radius:12px; padding:11px 14px;
-  font-size:13px; font-weight:600;
-  background:rgba(168,85,247,0.12); color:var(--coach-lt); cursor:pointer; flex:1;
   min-height:0; min-width:0;
 }
 .btn-row { display:flex; gap:8px; }
@@ -291,7 +275,6 @@ input { cursor: text; }
 .tag-blue  { background:var(--blue-t);  border-color:var(--blue);  color:#93c5fd; }
 .tag-red   { background:var(--red-t);   border-color:var(--red);   color:#fca5a5; }
 .tag-amber { background:var(--amber-t); border-color:var(--amber); color:#fcd34d; }
-.tag-coach { background:var(--coach-t); border-color:var(--coach); color:var(--coach-lt); }
 .tag-lime  { background:var(--lime-t);  border-color:var(--lime);  color:var(--lime); }
 
 .chip {
@@ -414,11 +397,6 @@ input { cursor: text; }
 }
 .bubble-left {
   background:var(--s2);border:1px solid var(--bd2);
-  border-radius:14px 14px 14px 4px;
-  padding:9px 12px;font-size:12px;max-width:230px;
-}
-.bubble-coach {
-  background:rgba(168,85,247,0.16);border:1px solid rgba(168,85,247,0.28);
   border-radius:14px 14px 14px 4px;
   padding:9px 12px;font-size:12px;max-width:230px;
 }
@@ -690,11 +668,6 @@ input { cursor: text; }
   border-radius:14px 14px 14px 4px;
   padding:9px 12px; font-size:12px; max-width:230px;
 }
-.bubble-coach {
-  background:rgba(168,85,247,0.16); border:1px solid rgba(168,85,247,0.28);
-  border-radius:14px 14px 14px 4px;
-  padding:9px 12px; font-size:12px; max-width:230px;
-}
 .bubble-time { font-size:9px; color:var(--mu2); margin-top:3px; }
 .chat-input-row { display:flex; gap:8px; margin-top:10px; }
 .chat-input-row input {
@@ -702,29 +675,10 @@ input { cursor: text; }
   background:var(--s0); color:var(--tx); padding:9px 12px; font-size:12px; outline:none;
 }
 .chat-input-row input::placeholder { color:var(--mu); }
-.chat-send-btn {
-  border:0; border-radius:12px; padding:9px 14px;
-  font-size:12px; font-weight:700;
-  background:linear-gradient(135deg,var(--coach),#7c3aed);
-  color:#fff; cursor:pointer; min-height:0; min-width:0;
-}
-
-/* ══════════════════════════════════════════
-   EMOJI GRID 6-COL (C3)
-══════════════════════════════════════════ */
-.emoji-grid-6 { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; }
-
-/* ══════════════════════════════════════════
-   COACH NAV ACCENT
-══════════════════════════════════════════ */
-.bnav-item.active.coach { color:var(--coach); }
-.bnav-item.active.coach::before { background:var(--coach); }
-.bnav-item .nav-ico { display:block; }
 
 /* ══════════════════════════════════════════
    CHIP ON STATE
 ══════════════════════════════════════════ */
-.chip.on { background:var(--brand-t); border-color:var(--brand); color:var(--brand); }
 
 /* ══════════════════════════════════════════
    SECTION LABEL

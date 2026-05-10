@@ -28,7 +28,7 @@ export default function LoginPage() {
 
     await fetchProfile(data.user.id)
     const { profile } = useAuthStore.getState()
-    navigate(profile ? (profile.role === 'coach' ? '/coach' : '/map') : '/setup', { replace: true })
+    navigate(profile ? '/map' : '/setup', { replace: true })
     setLoading(false)
   }
 
